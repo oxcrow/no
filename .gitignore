@@ -1,0 +1,38 @@
+# files we marked to ignore
+.ignore.*
+
+# basic files and folders
+**/build/**
+**/_build/**
+*.swp~
+tags
+*.vim
+
+# files created during compilation
+*.out
+*.o
+*.s
+*.bc
+
+# scripts
+run.sh
+ff-run.sh
+pretty.sh
+
+# files created by lsp server
+.clangd
+**/.cache/**
+compile_commands.json
+
+# files created by performance profilers
+perf.data
+perf.data.old
+cachegrind.out.*
+
+# files created by our code
+*.dat
+*.csv
+
+# project specific files
+*/makefile
+makefile
