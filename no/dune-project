@@ -1,0 +1,18 @@
+(lang dune 3.20)
+(generate_opam_files true)
+
+(name no)
+(source (github oxcrow/no))
+(authors "oxcrow<oxcrow@proton.me>")
+(license RESTRICTED)
+
+(using menhir 3.0)
+
+(package
+ (name no)
+ (synopsis "No compiler.")
+ (description "A compiler for the No programming language.")
+ (depends ocaml)
+ (tags ("compiler")))
+
+; dune: https://dune.readthedocs.io/en/stable/reference/dune-project/index.html

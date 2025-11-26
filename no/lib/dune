@@ -1,0 +1,20 @@
+(ocamllex
+ (modules lexer))
+
+(menhir
+ (modules parser))
+
+; Silence annoying warnings.
+; + Use -26-27 to silence unused variable warnings
+; + Use -33 to silenece unused opened module warnings
+; + Use -A to silence all warnings
+
+(env
+ (dev
+  (flags
+   (:standard -w -26-27 -w -33))))
+
+(library
+ (name no)
+ (preprocess
+  (pps ppx_deriving.show)))

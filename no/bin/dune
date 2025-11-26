@@ -1,0 +1,11 @@
+;; Statically build compiler executable in release mode
+
+(env
+ (release
+  (flags
+   (:standard -linkall -cclib -static -cclib -no-pie))))
+
+(executable
+ (public_name no)
+ (name main)
+ (libraries no))

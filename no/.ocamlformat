@@ -1,0 +1,4 @@
+profile = conventional
+let-binding-spacing=double-semicolon
+line-endings = lf
+margin = 90
