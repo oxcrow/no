@@ -1,0 +1,16 @@
+# files we marked to ignore
+.ignore.*
+
+# basic files and folders
+**/.zig-cache/**
+**/zig-out/**
+**/_build/**
+**/build/**
+
+# files created during compilation
+*.opam
+*.out
+*.o
+*.bc
+*.bt
+*.s
