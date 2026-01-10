@@ -1,0 +1,13 @@
+# files we marked to ignore
+.ignore.*
+
+# basic files and folders
+**/_build/**
+**/build/**
+
+# files created during compilation
+*.opam
+*.out
+*.o
+*.bc
+*.s
