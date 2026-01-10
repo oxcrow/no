@@ -1,0 +1,4 @@
+fn main() int {
+	let x = 0;
+	return x;
+}
