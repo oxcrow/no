@@ -1,7 +1,5 @@
-let document = "///"[^'\n']*
-let comment = "//"[^'\n']*
-let nospace = ['\n']['\t']*' '
-let indent = ['\n']['\t']*
+let document = "///"[^'\n']*['\n']
+let comment = "//"[^'\n']*['\n']
 let newline = ['\n']
 let white = [' ''\t']
 let digit = ['0'-'9']
@@ -13,10 +11,8 @@ rule token = parse
   (* Simple symbols *)
   | document    { Lexing.new_line lexbuf; token lexbuf }
   | comment     { Lexing.new_line lexbuf; token lexbuf }
-  | nospace     { Lexing.new_line lexbuf; failwith "Spaces will never be allowed for indentation! Use tabs!" }
-  | indent      { Lexing.new_line lexbuf; token lexbuf }
-  | ' '         { token lexbuf }
-  | '\t'        { failwith "Tabs will never be allowed for allignment! Use spaces!" }
+  | newline     { Lexing.new_line lexbuf; token lexbuf }
+  | white       { token lexbuf }
   | "/*"        { comment 1 lexbuf }
   | "*/"        { failwith "Can not terminate multi-line comment that doesn't exist." }
 
@@ -44,8 +40,8 @@ rule token = parse
   | "undefined" { Parser.UNDEFINED }
 
   | "=="        { Parser.EQEQ }
+  | "!="        { Parser.NE }
   | "="         { Parser.EQ }
-  | "/="        { Parser.NE }
   | "<="        { Parser.LE }
   | ">="        { Parser.GE }
   | "<"         { Parser.LT }

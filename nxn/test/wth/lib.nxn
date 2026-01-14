@@ -1,0 +1,7 @@
+pub fn swap(x *int, y *int) {
+	let xval = x&;
+	let yval = y&;
+	x& = yval;
+	y& = xval;
+}
+

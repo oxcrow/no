@@ -10,6 +10,7 @@ and entities =
       block : blocks;
       pos : pos;
     }
+  | Struct of { name : id; pos : pos }
 
 (* Blocks of codde inside each function *)
 and blocks = Block of { stmts : stmts list; pos : pos }
@@ -91,10 +92,14 @@ and terms =
 (* Types *)
 and types =
   | UnitType
+  | UndefinedType
   | IntType
   | FloatType
   | BoolType
   | TupleType of { types : types list }
+  | ConRefType of { life : id option; types : types }
+  | MutRefType of { life : id option; types : types }
+  | FunctionType of { args : types list; type' : types }
   | NoneType
 
 (* Mutability states of variables *)

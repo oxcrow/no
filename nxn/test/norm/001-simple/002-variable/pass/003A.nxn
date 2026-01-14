@@ -1,4 +1,4 @@
 fn main() int {
-	let x, y = @(0, 1);
+	let x, y = (0, 1);
 	return x;
 }

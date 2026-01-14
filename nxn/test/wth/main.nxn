@@ -1,0 +1,42 @@
+
+// Simple code to demonstrate crucial features of NxN.
+//
+// While the code may look somewhat weird, it's purpose is to force us to think,
+// and develop the compiler with assurance that it will remain stable in future.
+//
+// For ex: We do not need to do expression blocks, scope variable destructuring,
+// mutable references, etc. in these initial stages of compiler design, however,
+// being forced to think about them, and implementing them stabilizes the code's
+// architechture, and we can remain assured that it'll not change in future.
+//
+// tl;dr: We do more work now, so we won't have to refactor everything later!
+
+fn main() int {
+	let mut x, mut y = @{
+		let x = add(0, 0);
+		let y = fac(5);
+		set (x, y);
+	};
+	x, y = (y, x);
+	swap(*x, *y);
+	return x;
+}
+
+fn add(x int, y int) int {
+	return (x+y)*1 - (1-1)/1;
+}
+
+fn fac(x int) int {
+	if x == 0 {
+		return 1;
+	}
+	return x*fac(x-1);
+}
+
+fn swap(x *int, y *int) {
+	let xval = x&;
+	let yval = y&;
+	x& = yval;
+	y& = xval;
+}
+

@@ -42,8 +42,8 @@
 %token UNDEFINED
 
 %token EQEQ
-%token EQ
 %token NE
+%token EQ
 %token LE
 %token GE
 %token LT
@@ -82,7 +82,7 @@
 
 (* Lowest priority at the top *)
 %nonassoc LE GE LT GT
-%nonassoc EQ NE
+%nonassoc EQEQ NE
 %nonassoc NOT
 %left PLUS MINUS
 %left STAR SLASH
@@ -105,7 +105,10 @@ file:
 
 entities:
     | FN n=id; LPAREN a=seplist(COMMA,args); RPAREN t=rtypes; b=blocks; {
-        Ast.Function {name=n; args=a; type'=t; block=b; pos=(pos $loc)} }
+        Ast.Function {
+            name=n; args=a;
+            type'=(Ast.FunctionType{args=(List.map (fun var -> match var with | Ast.Var v -> v.type' | Ast.NoneVar -> Ast.NoneType) a); type'=t});
+            block=b; pos=(pos $loc)} }
 
 blocks:
     | LBRACE s=list(stmts); RBRACE {
@@ -116,11 +119,11 @@ stmts:
         Ast.LetStmt {vars=v; expr=e; pos=(pos $loc)} }
     | SET e=exprs; SEMICOLON {
         Ast.SetStmt {expr=e; pos=(pos $loc)} }
-    | v=seplist(COMMA,primary); EQ e=exprs; SEMICOLON {
+    | v=seplist(COMMA,exprs); EQ e=exprs; SEMICOLON {
         Ast.AssignStmt {vars=v; expr=e; pos=(pos $loc)} }
     | RETURN e=exprs; SEMICOLON {
         Ast.ReturnStmt {expr=e; pos=(pos $loc)} }
-    | x=postfix; SEMICOLON {
+    | x=exprs; SEMICOLON {
         Ast.InvokeStmt {expr=x; pos=(pos $loc)} }
     | b=blocks; {
         Ast.BlockStmt {block=b; pos=(pos $loc)} }
@@ -136,6 +139,8 @@ postfix:
     | x=compound; { x }
     | x=postfix; QUESTION %prec TRY {
         Ast.UnOpExpr {value=x; op=Ast.TryOp; type'=Ast.NoneType; pos=(pos $loc)} }
+    | x=postfix; AMPERSAND %prec UDEREF {
+        Ast.UnOpExpr {value=x; op=Ast.DerefOp; type'=Ast.NoneType; pos=(pos $loc)} }
 
 biops:
     | x=exprs; PLUS  y=exprs; %prec PLUS  {
@@ -163,11 +168,9 @@ unops:
         Ast.UnOpExpr {value=x; op=Ast.MutRefOp; type'=Ast.NoneType; pos=(pos $loc)} }
     | STAR x=exprs; %prec UMUTREF {
         Ast.UnOpExpr {value=x; op=Ast.MutRefOp; type'=Ast.NoneType; pos=(pos $loc)} }
-    | EXCLAMATION x=exprs; %prec UDEREF {
-        Ast.UnOpExpr {value=x; op=Ast.DerefOp; type'=Ast.NoneType; pos=(pos $loc)} }
 
 conds:
-    | x=exprs; EQ y=exprs; %prec EQ {
+    | x=exprs; EQEQ y=exprs; %prec EQEQ {
         Ast.BinOpExpr {lvalue=x; op=Ast.EqOp; rvalue=y; type'=Ast.NoneType; pos=(pos $loc)} }
     | x=exprs; NE y=exprs; %prec NE {
         Ast.BinOpExpr {lvalue=x; op=Ast.NeOp; rvalue=y; type'=Ast.NoneType; pos=(pos $loc)} }
@@ -215,7 +218,7 @@ terms:
     | x=INTVAL; { Ast.IntVal {value=x} }
     | x=FLOATVAL; { Ast.FloatVal {value=x} }
     | x=id; { Ast.IdVal {value=x} }
-    | AT LPAREN x=septuple(COMMA,exprs); RPAREN { Ast.TupleVal {value=x} }
+    | LPAREN x=septuple(COMMA,exprs); RPAREN { Ast.TupleVal {value=x} }
     | x=bools; { Ast.BoolVal {value=x} }
 
 bools:
@@ -241,6 +244,8 @@ types:
     | INT { Ast.IntType }
     | FLOAT { Ast.FloatType }
     | LPAREN t=septuple(COMMA,types); RPAREN { Ast.TupleType { types=t; } }
+    | AMPERSAND t=types; { Ast.ConRefType { life=None; types=t; }  }
+    | STAR t=types; { Ast.MutRefType { life=None; types=t; }  }
 
 states:
     | { Ast.ConState }

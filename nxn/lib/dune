@@ -5,6 +5,7 @@
  (modules parser))
 
 ; Silence annoying warnings.
+; + Use -21 to silence warnings for nonreturning methods
 ; + Use -26-27 to silence unused variable warnings
 ; + Use -33 to silenece unused opened module warnings
 ; + Use -A to silence all warnings
@@ -12,7 +13,7 @@
 (env
  (dev
   (flags
-   (:standard -w -26-27 -w -33))))
+   (:standard -w -21 -w -26-27 -w -33))))
 
 (library
  (name nxn)
