@@ -1,0 +1,33 @@
+fn A() int {
+    let (mut x int, mut y,) = @{
+        let (mut x int, mut y,) = .{0, 0};
+        let (mut x (), mut y) = .{0, 0};
+        let (mut x,) = .{0, 0};
+        let (mut x) = .{0, 0};
+        let (x, y,) = .{0, 0};
+        let (x, y) = .{0, 0};
+        let (x,) = .{0};
+        let (x) = .{0};
+        let  x  = 0;
+        ok .{x,y}
+    };
+    return x;
+}
+
+fn A(x int, y int,) int { return (x+y)*1 - (1-1)/1; }
+fn A(x int, y int) int { return x+y; }
+fn A(x int) int {  }
+fn A() int {  }
+fn A() {  }
+
+fn A() {
+    let x = @if x == 0 { } else if x == 1 { } else { };
+    let x = @if x != 0 { } else { };
+    if x == 0 { } else if x == 1 { } else { }
+    if x != 0 { }
+}
+
+fn A() {
+    let x = .[0, 1, 2, 3, 4, 5];
+    let y = x[0] + x[x[1]];
+}

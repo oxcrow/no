@@ -1,0 +1,29 @@
+BasedOnStyle: LLVM
+# Maximum line length
+ColumnLimit: 100
+
+# Use tabs
+UseTab: false
+TabWidth: 4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+
+# Breaking style
+BreakBeforeBraces: Attach
+BreakBeforeBinaryOperators: NonAssignment
+
+# Packing style
+BinPackArguments: false
+BinPackParameters: false
+
+# Alignment style
+AlignOperands: DontAlign
+PointerAlignment: Middle
+AlignTrailingComments: true
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: None
+AlignEscapedNewlines: Right
+AlignAfterOpenBracket: false
+
+# Short element style
+AllowShortFunctionsOnASingleLine: None

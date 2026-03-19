@@ -71,4 +71,4 @@ b: bench
 h: hype
 p: perf
 
-.PHONY = clean perf safe run
+.PHONY: clean test perf safe run
