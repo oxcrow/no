@@ -35,7 +35,22 @@ test {
 }
 
 pub fn build(mem: std.mem.Allocator, com: Compiler, file: []const u8) !void {
-    lib.ignore(.{ mem, com, file });
+    // Read code into memory
+    const code = try std.fs.cwd().readFileAlloc(mem, file, com.cfg.limits.maxFileSize);
+    defer mem.free(code);
+
+    // Start thread pool
+    var threads: std.Thread.Pool = undefined;
+    defer threads.deinit();
+    try threads.init(.{
+        .allocator = mem,
+        .n_jobs = @min(com.cfg.cmdBuild.?.threads, try std.Thread.getCpuCount()),
+    });
+
+    const tokens = try lib.lexer.tokenize(mem, com, code);
+    defer tokens.deinitConst(mem);
+
+    lib.ignore(.{file});
 }
 
 pub fn bye(com: Compiler) !void {

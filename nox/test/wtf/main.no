@@ -1,3 +1,4 @@
+use lib;
 
 // Simple code to demonstrate crucial features of No.
 //
@@ -23,7 +24,7 @@ fn main() int {
 }
 
 fn add(x int, y int) int {
-    return (x+y)*1 - (1-1)/1;
+    return (x+y)*1 - lib.sub(1,1)/1;
 }
 
 fn fac(n int) int {

@@ -43,7 +43,7 @@ pub const Argument = struct {
         }
         for (self.argv, 0..) |arg, i| {
             const slice = std.mem.span(arg.ptr);
-            if (slice.len >= key.len and i > 0) {
+            if (slice.len >= key.len and i > 0 and slice[1] != '-') {
                 for (slice) |d| {
                     const c = key[1];
                     if (c == d) {

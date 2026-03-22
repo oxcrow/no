@@ -15,11 +15,11 @@ fn dev(mem: std.mem.Allocator) !void {
 
     const com, const file = x: {
         const cmd_word = if (args.argv.len == 1) {
-            lib.crash(.ArgNotFoundCmd, @src(), .{});
+            lib.crash(.ArgCommandNotFound, @src(), .{});
         } else y: {
             const word = std.mem.span(args.argv[1].ptr);
             if (!std.mem.eql(u8, word, "build")) {
-                lib.crash(.ArgNotFoundCmd, @src(), .{});
+                lib.crash(.ArgCommandNotFound, @src(), .{});
             }
             break :y word;
         };
@@ -33,7 +33,7 @@ fn dev(mem: std.mem.Allocator) !void {
                     }
                 }
             }
-            lib.crash(.ArgNotFoundFile, @src(), .{});
+            lib.crash(.ArgFileNotFound, @src(), .{});
         };
 
         const com = lib.Compiler{
@@ -44,31 +44,42 @@ fn dev(mem: std.mem.Allocator) !void {
                     }
                     unreachable;
                 },
-                .cmdBuild = .{
-                    .mode = z: {
-                        if (args.keyExists("--parse").?) {
-                            break :z .Parse;
-                        } else if (args.keyExists("--analyze").?) {
-                            break :z .Analyse;
-                        } else if (args.keyExists("--compile").?) {
-                            break :z .Compile;
-                        }
+                .cmdBuild = .{ .mode = z: {
+                    if (args.keyExists("--parse").?) {
+                        break :z .Parse;
+                    } else if (args.keyExists("--analyze").?) {
+                        break :z .Analyse;
+                    } else if (args.keyExists("--compile").?) {
                         break :z .Compile;
-                    },
-                    .emit = z: {
-                        const backend = args.getValueOfKey("--emit") orelse {
-                            break :z .QBE;
-                        };
-                        if (std.mem.eql(u8, backend, "QBE")) {
-                            break :z .QBE;
-                        } else if (std.mem.eql(u8, backend, "LLVM")) {
-                            break :z .LLVM;
-                        } else {
-                            @panic("Unsupported emitter backend!");
-                        }
+                    }
+                    break :z .Compile;
+                }, .emit = z: {
+                    const backend = args.getValueOfKey("--emit") orelse {
                         break :z .QBE;
-                    },
-                },
+                    };
+                    if (std.mem.eql(u8, backend, "QBE")) {
+                        break :z .QBE;
+                    } else if (std.mem.eql(u8, backend, "LLVM")) {
+                        break :z .LLVM;
+                    } else {
+                        @panic("Unsupported emitter backend!");
+                    }
+                    break :z .QBE;
+                }, .threads = z: {
+                    const num_cpus = try std.Thread.getCpuCount();
+                    const threads = try std.fmt.parseInt(
+                        usize,
+                        args.getValueOfKey("--threads") orelse {
+                            break :z 1;
+                        },
+                        10,
+                    );
+                    if (threads > num_cpus) {
+                        lib.crash(.SysNotEnoughCPU, @src(), .{ num_cpus, threads });
+                    }
+                    std.debug.print("{d}\n", .{threads});
+                    break :z threads;
+                } },
             },
         };
 

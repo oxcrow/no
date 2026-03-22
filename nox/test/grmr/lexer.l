@@ -20,14 +20,18 @@ int yycolumn = 1;
 
 "//".*      { /* Ignore comments */ }
 
+"as"        { return AS; }
 "else"      { return ELSE; }
 "fn"        { return FN; }
 "int"       { return INT; }
 "if"        { return IF; }
 "let"       { return LET; }
 "mut"       { return MUT; }
+"mod"       { return MOD; }
+"new"       { return NEW; }
 "ok"        { return OK; }
 "return"    { return RETURN; }
+"use"       { return USE; }
 
 ";"         { return SEMICOLON; }
 "?"         { return QUESTION; }

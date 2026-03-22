@@ -12,7 +12,7 @@ int yylex(void);
 %locations
 %define parse.error verbose
 
-%token ELSE FN INT IF LET MUT OK RETURN
+%token AS ELSE FN INT IF LET MUT MOD NEW OK RETURN USE
 %token SEMICOLON QUESTION AMPERSAND COMMA DOT
 %token NOTEQ EQEQ EQ AT LE GE LT GT NOT 
 %token PLUS MINUS STAR SLASH
@@ -24,14 +24,26 @@ int yylex(void);
 %precedence NOT
 %left PLUS MINUS
 %left STAR SLASH
-%left DOT
 %precedence UMINUS UPLUS
+%left DOT
 
 %start program
 
 %%
 
-program: entityList
+program: useList entityList
+
+useList
+    : useList use
+    | %empty
+    ;
+
+use
+    : USE IDVAL AS IDVAL SEMICOLON
+    | MOD IDVAL AS IDVAL SEMICOLON
+    | USE IDVAL SEMICOLON
+    | MOD IDVAL SEMICOLON
+    ;
 
 entityList
     : entityList entity
@@ -103,7 +115,8 @@ compExpr
 
 // Binary operation expressions
 biopExpr
-    : MINUS expr %prec UMINUS
+    : expr DOT expr %prec DOT
+    | MINUS expr %prec UMINUS
     | PLUS expr %prec UPLUS
     | STAR expr
     | expr PLUS expr

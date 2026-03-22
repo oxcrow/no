@@ -2,6 +2,10 @@ const std = @import("std");
 const lib = @import("../lib.zig");
 const dbg = lib.dbg;
 
+const ContainerError = error{
+    MemoryCapacityLow,
+};
+
 pub fn List(comptime T: type) type {
     return struct {
         array: std.ArrayList(T),
@@ -97,8 +101,12 @@ pub fn MultiList(comptime T: type) type {
             try self.array.append(mem, x);
         }
 
-        pub fn appendAssumeCapacity(self: *Self, elem: T) void {
-            self.array.appendAssumeCapacity(elem);
+        pub fn appendAssumeCapacity(self: *Self, elem: T) !void {
+            if (self.len() < self.capacity()) {
+                self.array.appendAssumeCapacity(elem);
+            } else {
+                return error.MemoryCapacityLow;
+            }
         }
 
         const Self = @This();

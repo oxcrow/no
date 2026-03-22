@@ -40,11 +40,16 @@ pub fn hbar() []const u8 {
     return "─"; // U+2500
 }
 
+pub fn end() !void {
+    var buf: [256]u8 = undefined;
+    print("{s}\n", .{try xend(&buf)});
+}
+
 /// Print compiler source code location
 pub fn loc(pos: std.builtin.SourceLocation) !void {
     print("{s}{s} This error was raised from compiler source,\n", .{ bend(), hbar() });
-    print("   {s}(File: \"{s}\", Line: {d}){s}\n", .{ itl(), pos.file, pos.line, rst() });
-    print("   {s}(You could ignore this){s}\n", .{ itl(), rst() });
+    print("   {s}(File: \"{s}\", LineNumber: {d}){s}\n", .{ itl(), pos.file, pos.line, rst() });
+    print("   {s}(You could ignore this section){s}\n", .{ itl(), rst() });
 }
 
 /// Print error code
