@@ -75,6 +75,9 @@ fn fatal(comptime code: ErrorCode, src: std.builtin.SourceLocation, args: anytyp
             dbg.print("{s}\n", .{try dbg.xspc(&buf, "")});
             if (args.len == 3) {
                 dbg.print("{s}\n", .{try dbg.xtip(&buf, try dbg.xfmt(&buf1, "Around (LineNumber: {d}, ColumnNumber: {d})", .{ args[1], args[2] }))});
+                dbg.print("{s}", .{try dbg.xspc(&buf, "")});
+                try dbg.dump(args[0], args[1], args[2]);
+                dbg.print("\n", .{});
                 dbg.print("{s}\n", .{try dbg.xspc(&buf, "")});
             } else {
                 @compileError("lib.crash: Did you forget argument?");
@@ -99,6 +102,9 @@ fn fatal(comptime code: ErrorCode, src: std.builtin.SourceLocation, args: anytyp
             dbg.print("{s}\n", .{try dbg.xspc(&buf, "")});
             if (args.len == 3) {
                 dbg.print("{s}\n", .{try dbg.xtip(&buf, try dbg.xfmt(&buf1, "Around (LineNumber: {d}, ColumnNumber: {d})", .{ args[1], args[2] }))});
+                dbg.print("{s}", .{try dbg.xspc(&buf, "")});
+                try dbg.dump(args[0], args[1], args[2]);
+                dbg.print("\n", .{});
                 dbg.print("{s}\n", .{try dbg.xspc(&buf, "")});
             } else {
                 @compileError("lib.crash: Did you forget argument?");

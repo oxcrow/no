@@ -68,6 +68,41 @@ pub fn exit(code: enum { Failure, Success }) noreturn {
     unreachable;
 }
 
+pub fn dump(text: []const u8, line_index: usize, column_index: usize) !void {
+    var iline: usize = 1;
+    var icol: usize = 1;
+    var mark: bool = false;
+    for (text) |c| {
+        if (c == '\n' and iline == line_index - 1) {
+            print("{d:5} ┊ ", .{iline});
+        }
+        if (iline == line_index and c != '\n') {
+            if (icol == column_index - 1) {
+                if (c == ' ' or c == '\t') {
+                    print("{s}{c}{s}", .{ red(), '+', rst() });
+                } else {
+                    print("{s}{c}{s}", .{ red(), c, rst() });
+                }
+                mark = true;
+            } else {
+                if (mark) {
+                    print("{s}{c}", .{ red(), c });
+                } else {
+                    print("{c}", .{c});
+                }
+            }
+        }
+        if (c == '\n') {
+            print("{s}", .{rst()});
+            iline += 1;
+            icol = 1;
+        } else {
+            icol += 1;
+        }
+    }
+    print("{s}", .{rst()});
+}
+
 pub fn ensure(condition: bool) !void {
     try std.testing.expect(condition);
 }
@@ -80,4 +115,7 @@ fn rst() []const u8 {
 }
 fn itl() []const u8 {
     return "\x1b[3m";
+}
+fn uln() []const u8 {
+    return "\x1b[4m";
 }

@@ -34,23 +34,76 @@ test {
     std.testing.refAllDeclsRecursive(@This());
 }
 
+pub const Database = struct {
+    lock: std.Thread.RwLock = .{},
+    state: struct {
+        files: lib.List(File),
+    },
+
+    pub const File = struct {
+        text: []const u8,
+        index: u32,
+        hash: u64,
+    };
+
+    pub fn init(mem: std.mem.Allocator) !Self {
+        return .{
+            .state = .{
+                .files = try lib.List(File).initCapacity(mem, 100),
+            },
+        };
+    }
+
+    pub fn deinit(self: *Self, mem: std.mem.Allocator) void {
+        for (self.state.files.items()) |file| {
+            mem.free(file.text);
+        }
+        self.state.files.deinit(mem);
+    }
+
+    pub fn queryReadFile(self: *Self, file: []const u8) !void {
+        lib.ignore(.{ &self, file });
+    }
+
+    pub fn queryParseFile(self: *Self, file: []const u8) !void {
+        const hash = hashString(file);
+        lib.ignore(.{ &self, file, hash });
+    }
+
+    fn hashString(string: []const u8) u64 {
+        const hasher = std.hash.SipHash64(1, 3);
+        const hash = hasher.toInt(string, &[_]u8{0} ** 16);
+        return hash;
+    }
+
+    const Self = @This();
+};
+
 pub fn build(mem: std.mem.Allocator, com: Compiler, file: []const u8) !void {
     // Read code into memory
     const code = try std.fs.cwd().readFileAlloc(mem, file, com.cfg.limits.maxFileSize);
     defer mem.free(code);
 
-    // Start thread pool
+    // Start thread pool and wait group for parallel data processing
     var threads: std.Thread.Pool = undefined;
     defer threads.deinit();
     try threads.init(.{
         .allocator = mem,
         .n_jobs = @min(com.cfg.cmdBuild.?.threads, try std.Thread.getCpuCount()),
     });
+    var wg: std.Thread.WaitGroup = .{};
 
-    const tokens = try lib.lexer.tokenize(mem, com, code);
-    defer tokens.deinitConst(mem);
+    // Start compiler database
+    var db = try Database.init(mem);
+    defer db.deinit(mem);
 
-    lib.ignore(.{file});
+    // Parse the root file and then parse its dependencies in the same module
+    const root = try db.queryParseFile(file);
+
+    // Wait until all work is finished
+    wg.wait();
+
+    _ = root;
 }
 
 pub fn bye(com: Compiler) !void {
