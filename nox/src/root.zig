@@ -62,12 +62,21 @@ pub const Database = struct {
     }
 
     pub fn queryReadFile(self: *Self, file: []const u8) !void {
+        const hash = hashString(file);
+        const found, const cached = x: {
+            self.lock.lockShared();
+            self.lock.unlockShared();
+            break :x .{ false, null };
+        };
+        lib.ignore(.{
+            &self,  file,  hash, //
+            cached, found,
+        });
         lib.ignore(.{ &self, file });
     }
 
     pub fn queryParseFile(self: *Self, file: []const u8) !void {
-        const hash = hashString(file);
-        lib.ignore(.{ &self, file, hash });
+        lib.ignore(.{ &self, file });
     }
 
     fn hashString(string: []const u8) u64 {
@@ -98,7 +107,7 @@ pub fn build(mem: std.mem.Allocator, com: Compiler, file: []const u8) !void {
     defer db.deinit(mem);
 
     // Parse the root file and then parse its dependencies in the same module
-    const root = try db.queryParseFile(file);
+    const root = try db.queryReadFile(file);
 
     // Wait until all work is finished
     wg.wait();
