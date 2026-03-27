@@ -1,12 +1,12 @@
-PASS=opam exec -- dune exec no
+BUILD=opam exec -- dune exec no build
 
 all:
 	opam exec -- dune build
 run:
-	@opam exec -- dune exec no test/wtf/main.no
+	@${BUILD} test/wtf/main.no
 clean:
 	opam exec -- dune clean
 test:
-	${PASS} test/wtf/main.no
+	${BUILD} test/wtf/main.no
 
 .PHONY: test clean test run

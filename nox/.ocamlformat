@@ -1,4 +1,4 @@
 profile = conventional
 let-binding-spacing = double-semicolon
 line-endings = lf
-margin = 100
+margin = 90
