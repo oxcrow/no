@@ -9,6 +9,12 @@
   (flags
    (:standard -w -21 -w -26-27 -w -33))))
 
+(ocamllex
+ (modules extLexer))
+
+(menhir
+ (modules extParser))
+
 (library
  (name no)
  (preprocess

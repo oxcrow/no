@@ -14,3 +14,9 @@
 *.bc
 *.bt
 *.s
+
+# files created by tools
+*.yy.c
+*.tab.c
+*.tab.h
+ng

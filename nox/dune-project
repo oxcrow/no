@@ -5,6 +5,8 @@
 (authors "oxcrow<oxcrow@proton.me>")
 (license RESTRICTED)
 
+(using menhir 3.0)
+
 (package
  (name no)
  (synopsis "No compiler.")
