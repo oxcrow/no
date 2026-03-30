@@ -55,6 +55,7 @@ and uTokenKind =
   | INTVAL
   (* Other *)
   | WHITESPACE
+  | NEWLINE
   | DOCUMENT
   | COMMENT
   | EOF

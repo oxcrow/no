@@ -84,7 +84,7 @@ let rec nextToken (lexer : uLexer) : (Token.uToken * uLexer) option =
     let lexLine (lexer : uLexer) : Token.uToken option * uLexer =
       ( Some
           {
-            kind = Token.WHITESPACE;
+            kind = Token.NEWLINE;
             charIdx = lexer.charIdx;
             lineIdx = lexer.lineIdx;
             colIdx = lexer.colIdx;
@@ -121,7 +121,7 @@ let rec nextToken (lexer : uLexer) : (Token.uToken * uLexer) option =
     let token, lexer =
       match c with
       | ' ' | '\t' -> lexWhite lexer
-      | '\r' | '\n' -> lexLine lexer
+      | '\n' -> lexLine lexer
       | 'e' -> lexWord lexer Token.ELSE "else"
       | 'f' -> lexWord lexer Token.FUNCTION "fn"
       | 'i' -> lexMany lexer [ Token.INT; Token.IF ] [ "int"; "if" ] lexWord
@@ -137,7 +137,41 @@ let rec nextToken (lexer : uLexer) : (Token.uToken * uLexer) option =
       | '+' -> lexAtom lexer Token.PLUS "+"
       | '-' -> lexAtom lexer Token.MINUS "-"
       | '*' -> lexAtom lexer Token.STAR "*"
-      | '/' -> lexAtom lexer Token.SLASH "/"
+      | '/' ->
+          let token, lexer =
+            match
+              lexMany lexer
+                [ Token.DOCUMENT; Token.COMMENT; Token.SLASH ]
+                [ "///"; "//"; "/" ] lexAtom
+            with
+            | Some token, lexer ->
+                let token, lexer =
+                  match token.kind with
+                  | Token.DOCUMENT | Token.COMMENT ->
+                      let lexLineLen lexer =
+                        let rec nextNewLine text idx =
+                          let c = text.[idx] in
+                          match c = '\n' with
+                          | true -> idx
+                          | false -> nextNewLine text (idx + 1)
+                        in
+                        nextNewLine lexer.code lexer.charIdx - lexer.charIdx
+                      in
+                      let lineLen = lexLineLen lexer in
+                      printf "YYY: Lexing /// //  (LineLength: %d)!\n" lineLen;
+                      ( Some token,
+                        {
+                          lexer with
+                          charIdx = lexer.charIdx + (lineLen - 1);
+                          colIdx = lexer.colIdx + (lineLen - 1);
+                        } )
+                  | Token.SLASH -> (Some token, lexer)
+                  | _ -> failwith "wut?"
+                in
+                (token, lexer)
+            | None, lexer -> (None, lexer)
+          in
+          (token, lexer)
       (* Conditionals *)
       | '=' -> lexMany lexer [ Token.EQEQ; Token.EQ ] [ "=="; "=" ] lexAtom
       | '>' -> lexMany lexer [ Token.GE; Token.GT ] [ ">="; ">" ] lexAtom
@@ -206,11 +240,12 @@ let rec nextToken (lexer : uLexer) : (Token.uToken * uLexer) option =
           (None, lexer))
         else (None, lexer)
   in
+  printf "XXX: Token: %s\n" (Token.show_uToken (lastToken |> xSOME uPOS));
   match lastToken with
   | Some token -> (
-      match token.kind = Token.WHITESPACE with
-      | true -> nextToken lastLexer
-      | false -> Some (token, lastLexer))
+      match token.kind with
+      | Token.WHITESPACE | Token.NEWLINE -> nextToken lastLexer
+      | _ -> Some (token, lastLexer))
   | None -> None
 ;;
 
