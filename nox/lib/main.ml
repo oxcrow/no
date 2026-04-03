@@ -44,6 +44,7 @@ let dbgAst ast = write (Ast.show_file ast)
 (** Compile a file and generate QBE/LLVM IR *)
 let compile file =
   let ast = Parser.parseFileExt file in
+  let xir = Analyser.analyseFile ast in
   Some ""
 ;;
 
