@@ -17,5 +17,6 @@
 
 (library
  (name no)
+ (libraries unix)
  (preprocess
   (pps ppx_deriving.show)))

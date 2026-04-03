@@ -41,16 +41,17 @@ let what () =
 (** Debug print the AST *)
 let dbgAst ast = write (Ast.show_file ast)
 
-(** Compile a file and generate QBE/LLVM IR *)
-let compile file =
-  let ast = Parser.parseFileExt file in
+(** Compile a module and generate QBE/LLVM IR *)
+let compileModule rootFile =
+  let rootAst = Parser.parseFileExt rootFile in
+  let xir = Analyser.analyseFile rootAst in
   Some ""
 ;;
 
 (** Compile a file and verify it *)
 let pass file =
   let _emitted_code_ =
-    try compile file with
+    try compileModule file with
     | Failure message ->
         write message;
         None

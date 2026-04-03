@@ -1,12 +1,14 @@
 open Core
 
 type errorKind =
-  (* parser errors *)
+  (* Parser errors *)
   | UnknownParserError of string * (int * int)
   | UnknownToken of string * Token.uToken
   | InvalidIdentifier of string * Token.uToken
   | InvalidGrammar of string * Token.uToken
-  (* basic errors *)
+  (* Semantic errors *)
+  | UnknownIdentifier of string * string * (int * int)
+  (* Basic errors *)
   | UnwrapNone of string * Token.uToken
   | Fatal of string * string
 
@@ -18,6 +20,7 @@ let rec toString report : string option =
     | Some (Any hiddenError) -> (
         let error : errorKind = Obj.magic hiddenError in
         match error with
+        (* Parser errors *)
         | UnknownParserError (file, (lineIdx, colIdx)) ->
             let l1 = around file lineIdx colIdx in
             let l2 = enx "Perhaps see here?" in
@@ -34,6 +37,12 @@ let rec toString report : string option =
             let l1 = around file token.lineIdx token.colIdx in
             let l2 = enx "Perhaps try to fix this?" in
             Some (l1 ^ l2)
+        (* Semantic errors *)
+        | UnknownIdentifier (file, name, (lineIdx, colIdx)) ->
+            let l1 = around file lineIdx colIdx in
+            let l2 = enx "Perhaps use a valid identifier?" in
+            Some (l1 ^ l2)
+        (* Basic errors *)
         | UnwrapNone (file, token) ->
             let l1 = around file token.lineIdx token.colIdx in
             let l2 = ice "I unwrapped an Option's None value." in

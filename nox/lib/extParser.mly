@@ -1,4 +1,6 @@
 %{
+  open Core
+
   let exprId = ref 0
   let nxid () =
     let id = !exprId in
@@ -61,12 +63,22 @@ use:
     | s=scope; MOD n=name; SEMICOLON { Ast.Use {name=n; scope=s; import=false; loc=(loc $loc)} }
 
 entity:
-    | s=scope; FN n=name; LPAREN a=seplist(COMMA,args); RPAREN t=returnType; b=block; { rsid(); Ast.Function {name=n; type'=t; args=a; body=b; scope=s; loc=(loc $loc)} }
+    | s=scope; FN n=name; LPAREN a=seplist(COMMA,args); RPAREN t=returnType; b=block;
+    {
+        let numExprs=nxid() in
+        rsid();
+        Ast.Function
+        {
+            name=n;
+            type'=(Ast.FunctionType{args=(List.map (fun arg -> match arg with Ast.Variable a -> (a.type' |> xSOME uPOS ) ) a); type'=t});
+            args=a; body=b; scope=s; loc=(loc $loc); numExprs
+        }
+    }
 
 block:
     | LBRACE b=blockBody; RBRACE { b }
 blockBody:
-    | s=list(stmt); e=option(endExpr); { Ast.Block {stmts=(match e with Some x -> x :: s | None -> s)} }
+    | s=list(stmt); e=option(endExpr); { Ast.Block {stmts=(match e with Some x -> s @ [x] | None -> s)} }
 endExpr:
     | COLON e=expr; { Ast.SetStmt {expr=e; loc=(loc $loc)} }
 
@@ -121,13 +133,13 @@ compExpr:
     | e=termExpr; { e }
 
 termExpr:
-    | LPAREN x=septuple(COMMA,expr); RPAREN { Ast.TupleVal {value=x; id=(nxid())} }
-    | x=name; { Ast.IdVal {name=x; id=(nxid())} }
-    | x=FLOATVAL; { Ast.FloatVal {value=x; id=(nxid())} }
-    | x=INTVAL; { Ast.IntVal {value=x; id=(nxid())} }
-    | x=bools; { Ast.BoolVal {value=x; id=(nxid())} }
-    | UNDEFINED { Ast.UndefinedVal {id=(nxid())} }
-    | LPAREN RPAREN { Ast.UnitVal {id=(nxid())} }
+    | LPAREN x=septuple(COMMA,expr); RPAREN { Ast.TupleVal {value=x; id=(nxid()); loc=(loc $loc)} }
+    | x=name; { Ast.IdVal {name=x; id=(nxid()); loc=(loc $loc)} }
+    | x=FLOATVAL; { Ast.FloatVal {value=x; id=(nxid()); loc=(loc $loc)} }
+    | x=INTVAL; { Ast.IntVal {value=x; id=(nxid()); loc=(loc $loc)} }
+    | x=bools; { Ast.BoolVal {value=x; id=(nxid()); loc=(loc $loc)} }
+    | UNDEFINED { Ast.UndefinedVal {id=(nxid()); loc=(loc $loc)} }
+    | LPAREN RPAREN { Ast.UnitVal {id=(nxid()); loc=(loc $loc)} }
 
 ifStmt:
     | IF c=condExpr; b=block; o=option(elseBranch); { Ast.IfStmt {expr=Ast.IfExpr { cond=c; block=b; rest=o; id=(nxid()); loc=(loc $loc)}; loc=(loc $loc)} }
@@ -153,7 +165,7 @@ lvalPostExpr:
 
 lvalComp:
     | n=name; LPAREN a=seplist(COMMA,expr); RPAREN { Ast.InvokeExpr {name=n; args=a; id=(nxid()); loc=(loc $loc) } }
-    | n=name; { Ast.IdVal {name=n; id=(nxid());} }
+    | n=name; { Ast.IdVal {name=n; id=(nxid()); loc=(loc $loc)} }
 
 lvalBiopExpr:
     | l=lvalExpr; DOT r=lvalExpr; %prec DOT { Ast.BinOpExpr {lexpr=l; op=Ast.DotOp; rexpr=r; id=(nxid()); loc=(loc $loc) } }
@@ -163,10 +175,10 @@ bools:
     | FALSE { false }
 
 args:
-    | s=states; h=shadow; n=name; t=types; { Ast.Var {name=n; state=s; shadow=h; type'=(Some t)} }
+    | s=states; h=shadow; n=name; t=types; { Ast.Variable {name=n; state=s; shadow=h; type'=(Some t)} }
 
 vars:
-    | s=states; h=shadow; n=name; t=option(types); { Ast.Var {name=n; state=s; shadow=h; type'=t;} }
+    | s=states; h=shadow; n=name; t=option(types); { Ast.Variable {name=n; state=s; shadow=h; type'=t;} }
 
 returnType:
     | { Ast.UnitType }

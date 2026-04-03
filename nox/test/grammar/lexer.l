@@ -12,6 +12,9 @@ int yycolumn = 1;
 
 %option yylineno
 %option noyywrap
+%option stack
+
+%x comment
 
 %%
 
@@ -19,6 +22,19 @@ int yycolumn = 1;
 \n          { yycolumn = 1; }
 
 "//".*      { /* Ignore comments */ }
+
+"/*"                { yy_push_state(comment); }
+<comment>"/*"       { yy_push_state(comment); }
+<comment>"*/"       { yy_pop_state(); }
+<comment>.|\n       { /* Ignore lines */  }
+<comment><<EOF>>    {
+    fprintf(stderr,
+        "Unable to terminate nested comment. (Around (Line: %d, Column: %d))\n",
+        yylineno,
+        yycolumn
+    );
+    exit(EXIT_FAILURE);
+}
 
 "as"        { return AS; }
 "else"      { return ELSE; }
@@ -70,8 +86,7 @@ int yycolumn = 1;
 ["][^"]*["] { return STRVAL; }
 
 . {
-    fprintf(
-        stderr,
+    fprintf(stderr,
         "Illegal character '%s'. (Around (Line: %d, Column: %d))\n",
         yytext,
         yylineno,

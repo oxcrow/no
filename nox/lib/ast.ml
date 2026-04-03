@@ -10,6 +10,7 @@ and entities =
       args : vars list;
       scope : scopes;
       loc : loc;
+      numExprs : int;
     }
   | Struct of { name : names; value : unit; scope : scopes; loc : loc }
   | Use of { name : names; scope : scopes; import : bool; loc : loc }
@@ -45,18 +46,17 @@ and exprs =
   | ElseExpr of { block : blocks; id : int; loc : loc }
   | BlockExpr of { block : blocks; id : int; loc : loc }
   | EntityExpr of { value : entities; id : int; loc : loc }
-  | TupleVal of { value : exprs list; id : int }
-  | FloatVal of { value : string; id : int }
-  | BoolVal of { value : bool; id : int }
-  | IntVal of { value : string; id : int }
-  | UndefinedVal of { id : int }
-  | UnitVal of { id : int }
-  | IdVal of { name : names; id : int }
+  | TupleVal of { value : exprs list; id : int; loc : loc }
+  | FloatVal of { value : string; id : int; loc : loc }
+  | BoolVal of { value : bool; id : int; loc : loc }
+  | IntVal of { value : string; id : int; loc : loc }
+  | IdVal of { name : names; id : int; loc : loc }
+  | UndefinedVal of { id : int; loc : loc }
+  | UnitVal of { id : int; loc : loc }
 
 (* Argument variables *)
 and vars =
-  | Var of { name : names; state : states; shadow : bool; type' : types option }
-  | NoneVar
+  | Variable of { name : names; state : states; shadow : bool; type' : types option }
 
 (* Binary operations *)
 and biops =
