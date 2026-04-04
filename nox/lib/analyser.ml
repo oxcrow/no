@@ -7,7 +7,7 @@ let analyseFunction entity env = ()
 
 (** Analyse file and lower it to IR *)
 let analyseFile (ast : Ast.file) =
-  let env = () in
+  let env = Env.initFileEnv ast in
   match ast with
   | Ast.File f ->
       List.map

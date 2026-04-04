@@ -19,7 +19,7 @@ fn main() int {
 		:(x, y)
 	};
 	x, y = (y, x);
-	swap(*x, *y);
+	lib.swap(*x, *y);
 	:x
 }
 
@@ -35,11 +35,4 @@ fn fac(n int) int {
 	} else {
 		:n * fac(n-1)
 	}
-}
-
-fn swap(x *int, y *int) {
-	let xval = x&;
-	let yval = y&;
-	x& = yval;
-	y& = xval;
 }
