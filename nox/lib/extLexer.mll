@@ -24,6 +24,7 @@ rule token = parse
   | "as"        { ExtParser.AS }
   | "and"       { ExtParser.AND }
   | "else"      { ExtParser.ELSE }
+  | "export"    { ExtParser.EXPORT }
   | "false"     { ExtParser.FALSE }
   | "float"     { ExtParser.FLOAT }
   | "fn"        { ExtParser.FN }
@@ -34,7 +35,6 @@ rule token = parse
   | "mut"       { ExtParser.MUT }
   | "not"       { ExtParser.NOT }
   | "or"        { ExtParser.OR }
-  | "pub"       { ExtParser.PUB }
   | "return"    { ExtParser.RETURN}
   | "set"       { ExtParser.SET }
   | "true"      { ExtParser.TRUE }

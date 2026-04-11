@@ -46,7 +46,14 @@ let parseFileExt (file : string) =
                source = xSOURCE uPOS;
                error = Some (Any (Error.UnknownParserError (file, epos buf)));
              })
-    | Failure msg -> xTODO uPOS "parser-error-with-message"
+    | Failure msg ->
+        raise
+          (Report
+             {
+               message = msg;
+               source = xSOURCE uPOS;
+               error = Some (Any (Error.UnknownParserError (file, epos buf)));
+             })
   in
   let ast = match ast with Ast.File f -> Ast.File { entities = f.entities; file } in
   ast

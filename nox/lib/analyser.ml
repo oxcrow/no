@@ -347,7 +347,7 @@ let analyseFunction (file : string) (env : Env.env) (entity : Ast.entities) =
       let env, types = inferFunction file (Get.Ast.name f.name) env entity in
       Array.iter (fun t -> if t = Ast.NoneType then xNEVER uPOS "wut?") types;
       (* Array.iter (fun t -> print_endline (Ast.show_types t)) types; *)
-      ( (* XDELETE *) )
+      types
   | _ ->
       raise
         (Report

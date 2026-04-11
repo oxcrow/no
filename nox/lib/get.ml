@@ -72,3 +72,20 @@ module Ast = struct
     | Ast.IdVal y -> y.id
   ;;
 end
+
+(* *)
+module Qbe = struct
+  let idOfExpr x =
+    match x with
+    | Qbe.CallExpr y -> y.reg.id
+    | Qbe.TermExpr y -> y.reg.id
+    | Qbe.BinOpExpr y -> y.reg.id
+  ;;
+
+  let ixOfExpr x =
+    match x with
+    | Qbe.CallExpr y -> y.reg.ix
+    | Qbe.TermExpr y -> y.reg.ix
+    | Qbe.BinOpExpr y -> y.reg.ix
+  ;;
+end
