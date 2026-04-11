@@ -28,7 +28,7 @@
 %token <string> FLOATVAL
 %token <string> IDVAL
 
-%token AS AND ELSE FALSE FLOAT FN IF INT LET MOD MUT NOT OR PUB RETURN SET TRUE UNDEFINED USE
+%token AS AND ELSE EXPORT FALSE FLOAT FN IF INT LET MOD MUT NOT OR RETURN SET TRUE UNDEFINED USE
 %token EQEQ NE EQ LE GE LT GT
 
 %token SEMICOLON COLON COMMA AT DOTDOT DOT QUESTION TICK EXCLAMATION AMPERSAND HASH
@@ -63,7 +63,7 @@ use:
     | s=scope; MOD n=name; SEMICOLON { Ast.Use {name=n; scope=s; import=false; loc=(loc $loc)} }
 
 entity:
-    | s=scope; FN n=name; LPAREN a=seplist(COMMA,args); RPAREN t=returnType; b=block;
+    | s=scope; FN n=name; LPAREN a=seplist(COMMA,args); RPAREN t=returnType; LBRACE bs=list(stmt); be=option(endExpr); RBRACE
     {
         let numExprs=nxid() in
         rsid();
@@ -71,7 +71,9 @@ entity:
         {
             name=n;
             type'=(Ast.FunctionType{args=(List.map (fun arg -> match arg with Ast.Variable a -> (a.type' |> xSOME uPOS ) ) a); type'=t});
-            args=a; body=b; scope=s; loc=(loc $loc); numExprs
+            args=a;
+            body=(Ast.Block {stmts=(match be with Some x -> bs @ [match x with Ast.SetStmt xx -> Ast.ReturnStmt {expr=xx.expr; loc=(loc $loc)} |_ -> failwith "wut?"] | None -> bs)});
+            scope=s; loc=(loc $loc); numExprs
         }
     }
 
@@ -198,7 +200,7 @@ states:
 
 scope:
     | { Ast.PrivateScope }
-    | PUB { Ast.PublicScope }
+    | EXPORT { Ast.PublicScope }
 
 name:
     | id=IDVAL; { Ast.Name { name=id; loc=(loc $loc)}  }

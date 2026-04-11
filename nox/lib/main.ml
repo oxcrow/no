@@ -31,11 +31,30 @@ let what () =
         let cmd = Sys.argv.(1) in
         match cmd with
         | "build" -> Sys.argv.(2)
+        | "-h" | "--help" ->
+            usage ();
+            exit 0
         | _ ->
             usage ();
             failwith "Expected command to compile.")
   in
   file
+;;
+
+(* What kind of result to emit? *)
+let whatEmitMode () =
+  let emitModes =
+    Array.map
+      (fun x ->
+        match x with
+        | "--emit-qbe" -> Some "emit-qbe"
+        | "--emit-asm" -> Some "emit-asm"
+        | _ -> None)
+      Sys.argv
+    |> Array.to_list |> List.filter isSome
+  in
+  let mode = match emitModes with Some head :: _ -> Some head | _ -> None in
+  mode
 ;;
 
 (** Debug print the AST *)
@@ -44,13 +63,14 @@ let dbgAst ast = write (Ast.show_file ast)
 (** Compile a module and generate QBE/LLVM IR *)
 let compileModule rootFile =
   let rootAst = Parser.parseFileExt rootFile in
-  let xir = Analyser.analyseFile rootAst in
-  Some ""
+  let mir = Lower.lowerFile rootAst in
+  let qbe = Emit.emitQbe mir in
+  Some qbe
 ;;
 
 (** Compile a file and verify it *)
 let pass file =
-  let _emitted_code_ =
+  let qbeIRs =
     try compileModule file with
     | Failure message ->
         write message;
@@ -68,7 +88,19 @@ let pass file =
         write (Printexc.to_string exn);
         None
   in
-  ()
+  let qbe = String.concat "" (qbeIRs |> xSOME uPOS) in
+  match whatEmitMode () with
+  | Some "emit-qbe" -> write qbe
+  | Some "emit-asm" ->
+      let asm, _ = runShellCmd [ "qbe" ] (Some qbe) in
+      write asm
+  | None ->
+      let dirname = Filename.basename (Sys.getcwd ()) in
+      let outflag = "-o " ^ dirname ^ if Sys.win32 then ".exe" else "" in
+      let asm, _ = runShellCmd [ "qbe" ] (Some qbe) in
+      let _, _ = runShellCmd [ "cc"; "-x assembler -"; outflag ] (Some asm) in
+      ()
+  | _ -> xNEVER uPOS "emit-mode"
 ;;
 
 (** Compiler driver *)

@@ -1,4 +1,4 @@
-fn swap(x *int, y *int) {
+export fn swap(x *int, y *int) {
 	let xval = x&;
 	let yval = y&;
 	x& = yval;

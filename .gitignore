@@ -9,6 +9,7 @@
 
 # files created during compilation
 *.opam
+*.exe
 *.out
 *.o
 *.bc
@@ -19,4 +20,7 @@
 *.yy.c
 *.tab.c
 *.tab.h
+
+# executables
+nox/nox
 ng

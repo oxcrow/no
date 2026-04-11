@@ -72,26 +72,34 @@ let first list = List.hd list
 
 (* Run executable command *)
 let runShellCmd (command : string list) (input : string option) =
-  (* Extract the executable and arguments *)
-  let exe = List.hd command in
-  let arg = command |> Array.of_list in
-  (* Create pipes to read and write data to the process *)
-  let readPipe, writePipe = Unix.pipe () in
-  (* Execute the command with our custom pipe as its stdin *)
-  let pid = Unix.create_process exe arg readPipe Unix.stdout Unix.stderr in
-  (* Close the read pipe, write to the write pipe, and then close the write pipe *)
-  (* NOTE: Close the write pipe so the process sees EOF *)
-  Unix.close readPipe;
-  (match input with
-  | Some input ->
-      let _ = Unix.write_substring writePipe input 0 (String.length input) in
-      Unix.close writePipe
-  | None -> ());
-  (* Wait for the command to finish, so we can get the exit status *)
-  (* BUG: The code hangs when we try to wait. WHY? Let's use WNOHANG for now! *)
-  let _, exitStatus = Unix.waitpid [ WNOHANG ] pid in
-  match exitStatus with
-  | WEXITED 0 -> ()
-  | WEXITED n -> failwith "Shell command crashed!"
-  | _ -> failwith "Shell command crashed badly!"
+  let command = String.concat " " command in
+  let input = match input with Some text -> text | _ -> "" in
+  (* Read data from a channel, line by line *)
+  let readChannel channel : string =
+    let rec readLine channel =
+      try
+        let line = Stdlib.input_line channel in
+        line :: readLine channel
+      with End_of_file -> []
+    in
+    String.concat "\n" (readLine channel)
+  in
+  let stdoutChan, stdinChan, stderrChan =
+    Unix.open_process_full command Unix.(environment ())
+  in
+  (* Send input to stdin *)
+  (* NOTE: IMMEDIATELY flush and close the channel, so EOF is sent. *)
+  Stdlib.output_string stdinChan input;
+  flush stdinChan;
+  close_out stdinChan;
+  (* Read data from the output and error channels *)
+  let stdout = readChannel stdoutChan in
+  let stderr = readChannel stderrChan in
+  (* Clean up resources and return result *)
+  let status = Unix.close_process_full (stdoutChan, stdinChan, stderrChan) in
+  (match status with
+  | Unix.WEXITED 0 -> ()
+  | Unix.WEXITED n -> failwith ("Command terminated with error code: " ^ string_of_int n)
+  | _ -> xNEVER uPOS "Command terminated with error.");
+  (stdout, stderr)
 ;;
