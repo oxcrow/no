@@ -44,9 +44,10 @@ let dbgAst ast = write (Ast.show_file ast)
 (** Compile a module and generate QBE/LLVM IR *)
 let compileModule rootFile =
   let rootAst = Parser.parseFileExt rootFile in
-  let xir = Lower.lowerFile rootAst in
-  dbgAst rootAst;
-  Some ""
+  let qbe = Lower.lowerFile rootAst in
+  let asm = Emit.emitQbe qbe in
+  print_endline asm;
+  Some asm
 ;;
 
 (** Compile a file and verify it *)

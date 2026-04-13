@@ -88,4 +88,11 @@ module Qbe = struct
     | Qbe.TermExpr y -> y.reg.ix
     | Qbe.BinOpExpr y -> y.reg.ix
   ;;
+
+  let typeOfExpr x =
+    match x with
+    | Qbe.CallExpr y -> y.type'
+    | Qbe.TermExpr y -> y.type'
+    | Qbe.BinOpExpr y -> y.type'
+  ;;
 end

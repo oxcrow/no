@@ -1,7 +1,7 @@
 open Core
 
 type modules = { files : files list } [@@deriving show { with_path = false }]
-and files = { definitions : definitions; file : string }
+and files = { definitions : definitions list; file : string }
 
 and definitions =
   | Function of {

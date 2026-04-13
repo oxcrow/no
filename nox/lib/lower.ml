@@ -114,6 +114,6 @@ let lowerFile (ast : Ast.file) =
           (fun entity -> lowerFunction f.file env entity)
           (List.filter isFunction f.entities)
   in
-  List.iter (fun x -> print_endline (Qbe.show_definitions x)) definitions;
+  (* List.iter (fun x -> print_endline (Qbe.show_definitions x)) definitions; *)
   definitions
 ;;
