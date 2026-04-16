@@ -14,22 +14,24 @@ and definitions =
   | Data of unit
 
 and stmts =
-  | LetStmt of { expr : exprs; id : int; ix : int }
-  | ReturnStmt of { void : bool; id : int; ix : int }
+  | LetStmt of { expr : exprs; name : string }
+  | ReturnStmt of { void : bool; name : string }
 
 and exprs =
-  | CallExpr of { name : string; args : args list; type' : types; reg : regs }
+  | CallExpr of { name : string; args : exprs list; type' : types; reg : regs }
   | TermExpr of { value : string; type' : types; reg : regs }
   | BinOpExpr of { lreg : regs; rreg : regs; type' : types; op : binops; reg : regs }
+  | IdValExpr of { name : string; reg : regs; type' : types }
+  | RegExpr of { reg : regs; type' : types }
 
 and linkages =
   | ExportLink (* export : for globally exported symbols *)
   | ThreadLink (* thread : for thread local variables *)
   | SectionLink (* section : for linker data storage *)
 
-and args = { type' : types; id : int; ix : int }
+and args = { name : string; type' : types }
 and binops = AddOp | SubOp | MulOp | DivOp | RemOp | UDivOp | URemOp
-and regs = { id : int; ix : int }
+and regs = { name : string }
 
 and types =
   | IdType of string (* :ID : for agregates *)

@@ -38,6 +38,7 @@ int yycolumn = 1;
 
 "as"        { return AS; }
 "else"      { return ELSE; }
+"export"    { return EXPORT; }
 "fn"        { return FN; }
 "int"       { return INT; }
 "if"        { return IF; }

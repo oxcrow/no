@@ -72,8 +72,10 @@ and inferArgs (file : string) (env : Env.env) (types : Ast.types array)
           match head with
           | Ast.Variable arg -> ( match arg.name with Ast.Name name -> name.loc)
         in
+        let id = match head with Ast.Variable arg -> arg.id in
         let env = Env.addRecord env (Env.Variable { name; type'; loc }) name in
         let env, types = aux file env types tail (argIdx + 1) in
+        types.(id) <- type';
         (env, types)
   in
   aux file env types args 0
@@ -92,6 +94,7 @@ and inferVars (file : string) (env : Env.env) (types : Ast.types array)
         let type' =
           match type' with Ast.TupleType v -> List.nth v.types varIdx | _ -> type'
         in
+        let id = match head with Ast.Variable v -> v.id in
         assure uPOS
           (match expectedType with
           | Some expectedType -> expectedType = type'
@@ -112,6 +115,7 @@ and inferVars (file : string) (env : Env.env) (types : Ast.types array)
         let loc = Get.Ast.locOfExpr expr in
         let env = Env.addRecord env (Env.Variable { name; type'; loc }) name in
         let env, types = aux file env types tail (varIdx + 1) in
+        types.(id) <- type';
         (env, types)
   in
   assure uPOS
@@ -345,7 +349,18 @@ let analyseFunction (file : string) (env : Env.env) (entity : Ast.entities) =
   match entity with
   | Ast.Function f ->
       let env, types = inferFunction file (Get.Ast.name f.name) env entity in
-      Array.iter (fun t -> if t = Ast.NoneType then xNEVER uPOS "wut?") types;
+      (* Ensure all expression types are inferred before lowering *)
+      Array.iter
+        (fun t ->
+          if t = Ast.NoneType then
+            raise
+              (Report
+                 {
+                   message = "Unable to infer all expression types.";
+                   source = xSOURCE uPOS;
+                   error = None;
+                 }))
+        types;
       (* Array.iter (fun t -> print_endline (Ast.show_types t)) types; *)
       types
   | _ ->

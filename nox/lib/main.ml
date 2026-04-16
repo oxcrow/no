@@ -30,13 +30,20 @@ let what () =
     | false -> (
         let cmd = Sys.argv.(1) in
         match cmd with
-        | "build" -> Sys.argv.(2)
         | "-h" | "--help" ->
             usage ();
             exit 0
-        | _ ->
-            usage ();
-            failwith "Expected command to compile.")
+        | _ -> (
+            let file =
+              List.nth_opt
+                (List.filter
+                   (fun arg -> not (String.starts_with ~prefix:"-" arg))
+                   (Array.to_list Sys.argv |> List.tl))
+                0
+            in
+            match file with
+            | Some file -> file
+            | None -> failwith "Unable to parse filename from arguments."))
   in
   file
 ;;
@@ -47,8 +54,8 @@ let whatEmitMode () =
     Array.map
       (fun x ->
         match x with
-        | "--emit-qbe" -> Some "emit-qbe"
-        | "--emit-asm" -> Some "emit-asm"
+        | "--emit-qbe" -> Some "--emit-qbe"
+        | "--emit-asm" -> Some "--emit-asm"
         | _ -> None)
       Sys.argv
     |> Array.to_list |> List.filter isSome
@@ -65,12 +72,13 @@ let compileModule rootFile =
   let rootAst = Parser.parseFileExt rootFile in
   let mir = Lower.lowerFile rootAst in
   let qbe = Emit.emitQbe mir in
-  Some qbe
+  (* dbgAst rootAst; *)
+  Some (qbe, rootFile)
 ;;
 
 (** Compile a file and verify it *)
 let pass file =
-  let qbeIRs =
+  let result =
     try compileModule file with
     | Failure message ->
         write message;
@@ -88,15 +96,19 @@ let pass file =
         write (Printexc.to_string exn);
         None
   in
-  let qbe = String.concat "" (qbeIRs |> xSOME uPOS) in
+  let qbe = String.trim (String.concat "" (result |> xSOME uPOS |> fst)) in
+  let rootFile =
+    result |> xSOME uPOS |> snd
+    |> String.map (fun c -> if c == '\\' then '/' else c)
+    |> Filename.basename |> Filename.chop_extension
+  in
   match whatEmitMode () with
-  | Some "emit-qbe" -> write qbe
-  | Some "emit-asm" ->
+  | Some "--emit-qbe" -> write qbe
+  | Some "--emit-asm" ->
       let asm, _ = runShellCmd [ "qbe" ] (Some qbe) in
       write asm
   | None ->
-      let dirname = Filename.basename (Sys.getcwd ()) in
-      let outflag = "-o " ^ dirname ^ if Sys.win32 then ".exe" else "" in
+      let outflag = "-o " ^ rootFile ^ if Sys.win32 then ".exe" else "" in
       let asm, _ = runShellCmd [ "qbe" ] (Some qbe) in
       let _, _ = runShellCmd [ "cc"; "-x assembler -"; outflag ] (Some asm) in
       ()

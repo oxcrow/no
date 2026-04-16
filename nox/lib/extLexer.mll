@@ -37,6 +37,7 @@ rule token = parse
   | "or"        { ExtParser.OR }
   | "return"    { ExtParser.RETURN}
   | "set"       { ExtParser.SET }
+  | "struct"    { ExtParser.STRUCT }
   | "true"      { ExtParser.TRUE }
   | "undefined" { ExtParser.UNDEFINED }
   | "use"       { ExtParser.USE }

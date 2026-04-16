@@ -66,7 +66,9 @@ let addRecord (env : env) (record : record) (name : string) =
 ;;
 
 (* Initialize an environment of a file, by storing its entities in it *)
-let initFileEnv ast = match ast with Ast.File f -> addEntities f.entities
+let initFileEnv ast =
+  match ast with Ast.File f -> addEntities (List.filter isFunction f.entities)
+;;
 
 let getFunctionType (env : env) (name : string) =
   match Hashtbl.find_opt env.table name with

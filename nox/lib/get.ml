@@ -75,18 +75,13 @@ end
 
 (* *)
 module Qbe = struct
-  let idOfExpr x =
+  let regOfExpr x =
     match x with
-    | Qbe.CallExpr y -> y.reg.id
-    | Qbe.TermExpr y -> y.reg.id
-    | Qbe.BinOpExpr y -> y.reg.id
-  ;;
-
-  let ixOfExpr x =
-    match x with
-    | Qbe.CallExpr y -> y.reg.ix
-    | Qbe.TermExpr y -> y.reg.ix
-    | Qbe.BinOpExpr y -> y.reg.ix
+    | Qbe.CallExpr y -> y.reg.name
+    | Qbe.TermExpr y -> y.reg.name
+    | Qbe.BinOpExpr y -> y.reg.name
+    | Qbe.IdValExpr y -> y.reg.name
+    | Qbe.RegExpr y -> y.reg.name
   ;;
 
   let typeOfExpr x =
@@ -94,5 +89,7 @@ module Qbe = struct
     | Qbe.CallExpr y -> y.type'
     | Qbe.TermExpr y -> y.type'
     | Qbe.BinOpExpr y -> y.type'
+    | Qbe.IdValExpr y -> y.type'
+    | Qbe.RegExpr y -> y.type'
   ;;
 end

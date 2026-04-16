@@ -12,7 +12,7 @@ int yylex(void);
 %locations
 %define parse.error verbose
 
-%token AS ELSE FN INT IF LET MATCH MUT MOD NEW RETURN USE
+%token AS ELSE EXPORT FN INT IF LET MATCH MUT MOD NEW RETURN USE
 %token SEMICOLON QUESTION AMPERSAND COLON COMMA DOT BAR
 %token NOTEQ EQEQ EQ AT LE GE LT GT NOT
 %token PLUS MINUS STAR SLASH
@@ -32,7 +32,7 @@ int yylex(void);
 
 %%
 
-program: useList entityList
+program: entityList
 
 // List of imported modules
 useList
@@ -48,10 +48,10 @@ entityList
 
 // Used imports
 use
-    : USE IDVAL EQ modPath SEMICOLON
-    | MOD IDVAL EQ modPath SEMICOLON
-    | USE usePath SEMICOLON
-    | MOD modPath SEMICOLON
+    : scope USE IDVAL EQ modPath SEMICOLON
+    | scope MOD IDVAL EQ modPath SEMICOLON
+    | scope USE usePath SEMICOLON
+    | scope MOD modPath SEMICOLON
     ;
 
 // Unused imports
@@ -67,7 +67,8 @@ usePath
 
 // Top level entities (functions, structs, enums, etc.)
 entity
-    : FN IDVAL LPAREN argList RPAREN returnType block
+    : scope FN IDVAL LPAREN argList RPAREN returnType block
+    | use
     ;
 
 // Block of code (used both as statements and expressions)
@@ -292,6 +293,12 @@ var
 state
     : MUT
     | %empty
+    ;
+
+// Scopes
+scope
+    : %empty
+    | EXPORT
     ;
 
 // Return types

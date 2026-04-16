@@ -1,0 +1,7 @@
+export fn main() int {
+	:zero()*1+(1/1)
+}
+
+fn zero() int {
+	:0
+}

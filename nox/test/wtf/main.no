@@ -48,9 +48,9 @@ fn swap(x *int, y *int) {
 */
 
 export fn main() int {
-	:zero()*1+1/1
+	:add(0, 1)
 }
 
-fn zero() int {
-	:0
+fn add(x int, y int) int {
+	:(x+y)*1 - (1-1)/1
 }

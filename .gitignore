@@ -22,5 +22,5 @@
 *.tab.h
 
 # executables
-nox/nox
+main
 ng

@@ -56,7 +56,13 @@ and exprs =
 
 (* Argument variables *)
 and vars =
-  | Variable of { name : names; state : states; shadow : bool; type' : types option }
+  | Variable of {
+      name : names;
+      state : states;
+      shadow : bool;
+      type' : types option;
+      id : int;
+    }
 
 (* Binary operations *)
 and biops =

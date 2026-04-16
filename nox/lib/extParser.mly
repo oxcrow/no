@@ -28,7 +28,7 @@
 %token <string> FLOATVAL
 %token <string> IDVAL
 
-%token AS AND ELSE EXPORT FALSE FLOAT FN IF INT LET MOD MUT NOT OR RETURN SET TRUE UNDEFINED USE
+%token AS AND ELSE EXPORT FALSE FLOAT FN IF INT LET MOD MUT NOT OR RETURN SET STRUCT TRUE UNDEFINED USE
 %token EQEQ NE EQ LE GE LT GT
 
 %token SEMICOLON COLON COMMA AT DOTDOT DOT QUESTION TICK EXCLAMATION AMPERSAND HASH
@@ -56,11 +56,11 @@
 
 file:
     | EOF { Ast.File {entities=[]; file="I DON'T KNOW!"} }
-    | u=use; e=nonempty_list(entity); EOF { Ast.File {entities=e; file="I DON'T HECCIN' KNOW!"} }
+    | e=nonempty_list(entity); EOF { Ast.File {entities=e; file="I DON'T HECCIN' KNOW!"} }
 
 use:
-    | s=scope; USE n=name; SEMICOLON { Ast.Use {name=n; scope=s; import=true; loc=(loc $loc)} }
-    | s=scope; MOD n=name; SEMICOLON { Ast.Use {name=n; scope=s; import=false; loc=(loc $loc)} }
+    | USE n=name; SEMICOLON { Ast.Use {name=n; scope=Ast.PrivateScope; import=true; loc=(loc $loc)} }
+    | MOD n=name; SEMICOLON { Ast.Use {name=n; scope=Ast.PrivateScope; import=false; loc=(loc $loc)} }
 
 entity:
     | s=scope; FN n=name; LPAREN a=seplist(COMMA,args); RPAREN t=returnType; LBRACE bs=list(stmt); be=option(endExpr); RBRACE
@@ -76,6 +76,8 @@ entity:
             scope=s; loc=(loc $loc); numExprs
         }
     }
+    | s=scope; STRUCT n=name; LBRACE RBRACE { Ast.NoneEnty }
+    | s=scope; u=use; { u }
 
 block:
     | LBRACE b=blockBody; RBRACE { b }
@@ -177,10 +179,10 @@ bools:
     | FALSE { false }
 
 args:
-    | s=states; h=shadow; n=name; t=types; { Ast.Variable {name=n; state=s; shadow=h; type'=(Some t)} }
+    | s=states; h=shadow; n=name; t=types; { Ast.Variable {name=n; state=s; shadow=h; type'=(Some t); id=(nxid())} }
 
 vars:
-    | s=states; h=shadow; n=name; t=option(types); { Ast.Variable {name=n; state=s; shadow=h; type'=t;} }
+    | s=states; h=shadow; n=name; t=option(types); { Ast.Variable {name=n; state=s; shadow=h; type'=t; id=(nxid())} }
 
 returnType:
     | { Ast.UnitType }

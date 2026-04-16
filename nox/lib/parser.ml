@@ -229,7 +229,7 @@ and parseVar lexer pos =
   let shadow = false in
   let name, lexer = parseName lexer uPOS in
   let type', lexer = parseTypeOption lexer uPOS in
-  (Ast.Variable { name; state; shadow; type' }, lexer)
+  (Ast.Variable { name; state; shadow; type'; id = 0 }, lexer)
 
 and parseState lexer pos =
   let peekToken, _ = nextToken lexer pos in
