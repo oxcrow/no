@@ -1,11 +1,12 @@
 open Core
 
 type modules = { files : files list } [@@deriving show { with_path = false }]
-and files = { definitions : definitions list; file : string }
+and files = { defns : defns list; file : string }
 
-and definitions =
+(* Definitions *)
+and defns =
   | Function of {
-      export : bool;
+      scope : scopes;
       name : string;
       args : args list;
       stmts : stmts list;
@@ -13,16 +14,45 @@ and definitions =
     }
   | Data of unit
 
+(* Statements *)
 and stmts =
-  | LetStmt of { expr : exprs; name : string }
-  | ReturnStmt of { void : bool; name : string }
+  (* Compound *)
+  | LetStmt of { var : regs; expr : exprs }
+  | ReturnStmt of { var : regs option }
+  | BlitStmt
+  | JmpStmt
+  | JnzStmt
+  | HaltStmt
+  (* Simple *)
+  | StoreStmt of { expr : exprs }
+  | CallStmt of { expr : exprs }
+  (* Extra *)
+  | BlockStmt of { name : string }
 
+(* Expressions *)
 and exprs =
-  | CallExpr of { name : string; args : exprs list; type' : types; reg : regs }
-  | TermExpr of { value : string; type' : types; reg : regs }
-  | BinOpExpr of { lreg : regs; rreg : regs; type' : types; op : binops; reg : regs }
-  | IdValExpr of { name : string; reg : regs; type' : types }
-  | RegExpr of { reg : regs; type' : types }
+  (* Compound *)
+  | AllocExpr of { var : regs; align : int; size : int; type' : types }
+  | CallExpr of { var : regs; name : string; args : exprs list; type' : types }
+  | BinOpExpr of { var : regs; lreg : regs; rreg : regs; type' : types; op : binops }
+  | FieldExpr of {
+      var : regs;
+      align : int;
+      size : int;
+      offset : int;
+      idx : int;
+      type' : types;
+    }
+  | StoreExpr of { var : regs; type' : types; from : regs; dest : regs }
+  | LoadExpr of { var : regs; type' : types; from : regs }
+  (* Simple *)
+  | IdValExpr of { var : regs; name : string; type' : types }
+  | RegExpr of { var : regs; type' : types }
+  | TermExpr of { var : regs; value : string; type' : types }
+  | VoidExpr
+
+(* Binary expression operators *)
+and binops = AddOp | SubOp | MulOp | DivOp | RemOp | UDivOp | URemOp
 
 and linkages =
   | ExportLink (* export : for globally exported symbols *)
@@ -30,7 +60,6 @@ and linkages =
   | SectionLink (* section : for linker data storage *)
 
 and args = { name : string; type' : types }
-and binops = AddOp | SubOp | MulOp | DivOp | RemOp | UDivOp | URemOp
 and regs = { name : string }
 
 and types =
@@ -48,3 +77,5 @@ and sigils =
   | GlobalSigil (* $ : for functions, strings, etc. *)
   | LocalSigil (* % : for local registers *)
   | BlockSigil (* @ : for block labels *)
+
+and scopes = ExportScope | PrivateScope

@@ -65,14 +65,19 @@ use:
 entity:
     | s=scope; FN n=name; LPAREN a=seplist(COMMA,args); RPAREN t=returnType; LBRACE bs=list(stmt); be=option(endExpr); RBRACE
     {
-        let numExprs=nxid() in
+        let numExprs=(nxid() + (match be with Some _ -> 0 | None -> 1)) in
         rsid();
         Ast.Function
         {
             name=n;
             type'=(Ast.FunctionType{args=(List.map (fun arg -> match arg with Ast.Variable a -> (a.type' |> xSOME uPOS ) ) a); type'=t});
             args=a;
-            body=(Ast.Block {stmts=(match be with Some x -> bs @ [match x with Ast.SetStmt xx -> Ast.ReturnStmt {expr=xx.expr; loc=(loc $loc)} |_ -> failwith "wut?"] | None -> bs)});
+            body=(
+                Ast.Block {
+                    stmts=(match be with Some x -> bs @ [match x with
+                        | Ast.SetStmt xx -> Ast.ReturnStmt {expr=xx.expr; loc=(loc $loc)}
+                        |_  -> failwith "wut?"]
+                    | None -> bs @ [Ast.ReturnStmt {expr=Ast.UnitVal{id=(let x = (nxid()) in rsid(); x); loc=(loc $loc)}; loc=(loc $loc)}])});
             scope=s; loc=(loc $loc); numExprs
         }
     }

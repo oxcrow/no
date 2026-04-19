@@ -1,0 +1,5 @@
+export fn main() int {
+	let x, y, z = (0, (), 1);
+	let z = x + z;
+	:z
+}

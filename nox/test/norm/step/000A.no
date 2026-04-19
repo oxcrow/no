@@ -1,0 +1,7 @@
+export fn main() {
+	// Nothing ... return absolutely nothing ...
+}
+
+fn unit() {
+	:()
+}

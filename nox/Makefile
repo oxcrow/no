@@ -8,9 +8,12 @@ clean:
 	opam exec -- dune clean
 	-rm *.out
 test:
+	-$(BUILD) test/norm/step/000A.no -- --emit-qbe
 	-$(BUILD) test/norm/step/001A.no -- --emit-qbe
 	-$(BUILD) test/norm/step/001B.no -- --emit-qbe
+	-$(BUILD) test/norm/step/001C.no -- --emit-qbe
 run:
+	@#$(BUILD) test/norm/step/000A.no -- --emit-qbe
 	@$(BUILD) test/wtf/main.no
 
 .PHONY: test clean test run bin

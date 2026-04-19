@@ -20,6 +20,8 @@ module Ast = struct
   ;;
 
   let nameOfVar x = match x with Ast.Variable v -> name v.name
+  let typeOfVar x = match x with Ast.Variable v -> v.type'
+  let idOfVar x = match x with Ast.Variable v -> v.id
 
   let locofEntity x =
     let simplify y =
@@ -75,21 +77,39 @@ end
 
 (* *)
 module Qbe = struct
+  let nameOfReg (x : Qbe.regs) = x.name
+
   let regOfExpr x =
     match x with
-    | Qbe.CallExpr y -> y.reg.name
-    | Qbe.TermExpr y -> y.reg.name
-    | Qbe.BinOpExpr y -> y.reg.name
-    | Qbe.IdValExpr y -> y.reg.name
-    | Qbe.RegExpr y -> y.reg.name
+    | Qbe.AllocExpr y -> y.var.name
+    | Qbe.CallExpr y -> y.var.name
+    | Qbe.BinOpExpr y -> y.var.name
+    | Qbe.FieldExpr y -> y.var.name
+    | Qbe.IdValExpr y -> y.var.name
+    | Qbe.RegExpr y -> y.var.name
+    | Qbe.TermExpr y -> y.var.name
+    | _ -> xTODO uPOS (Qbe.show_exprs x)
   ;;
 
   let typeOfExpr x =
     match x with
+    | Qbe.AllocExpr y -> y.type'
     | Qbe.CallExpr y -> y.type'
     | Qbe.TermExpr y -> y.type'
     | Qbe.BinOpExpr y -> y.type'
+    | Qbe.FieldExpr y -> y.type'
+    | Qbe.LoadExpr y -> y.type'
     | Qbe.IdValExpr y -> y.type'
     | Qbe.RegExpr y -> y.type'
+    | _ -> xTODO uPOS "wut?"
   ;;
+end
+
+module X = struct
+  let getAstName = Ast.name
+  let getAstNameOfVar = Ast.nameOfVar
+  let getAstTypeOfVar = Ast.typeOfVar
+  let getQbeRegOfExpr = Qbe.regOfExpr
+  let getQbeTypeOfExpr = Qbe.typeOfExpr
+  let getQbeNameOfReg = Qbe.nameOfReg
 end

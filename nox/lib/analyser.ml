@@ -8,12 +8,15 @@ let rec inferFunction (file : string) (name : string) (env : Env.env)
   | Ast.Function f ->
       let numExprs = f.numExprs in
       let types = Array.make numExprs Ast.NoneType in
+      Hashtbl.add env.table "$self"
+        (Env.Function { name = "$self"; args = f.args; type' = f.type'; loc = f.loc });
       let env, types = inferArgs file env types f.args in
       let env, types = inferBlock file env types f.body in
+      Hashtbl.remove env.table "$self";
       (env, types)
   | _ -> xNEVER uPOS "wut?"
 
-and inferBlock file env types body =
+and inferBlock file env types body : Env.env * 'a =
   let env = Env.addScope env in
   let rec inferStmts file env types stmts =
     match stmts with
@@ -45,6 +48,26 @@ and inferStmt file env types stmt =
         (env, types)
     | Ast.ReturnStmt s ->
         let env, types = inferExpr file env types s.expr in
+        let retType = types.(Get.Ast.idOfExpr s.expr) in
+        let expectedType =
+          match Hashtbl.find env.table "$self" with
+          | Env.Function f -> (
+              match f.type' with Ast.FunctionType t -> t.type' | _ -> xNEVER uPOS "wut?")
+          | _ -> xNEVER uPOS "wut?"
+        in
+        assure uPOS (retType = expectedType) (fun _ ->
+            raise
+              (Report
+                 {
+                   message =
+                     "Unable to return value from function, as return type is wrong.";
+                   source = xSOURCE uPOS;
+                   error =
+                     Some
+                       (Any
+                          (Error.UnknownParserError
+                             (file, Get.Ast.locOfExpr s.expr |> Get.Ast.locOfLoc)));
+                 }));
         (env, types)
     | Ast.InvokeStmt s ->
         let env, types = inferExpr file env types s.expr in
