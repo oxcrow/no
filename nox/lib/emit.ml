@@ -30,7 +30,7 @@ and emitStmts stmts =
 and emitStmt stmt =
   let fmt = Printf.sprintf in
   match stmt with
-  | Qbe.BlockStmt s -> fmt "@%s\n" s.name
+  | Qbe.LabelStmt s -> fmt "@%s\n" s.name
   | Qbe.LetStmt s ->
       fmt "\t%%x.%s = %s %s\n" (getQbeNameOfReg s.var)
         (emitType (Get.Qbe.typeOfExpr s.expr))
@@ -46,6 +46,7 @@ and emitStmt stmt =
       match s.var with
       | Some reg -> fmt "\tret %%x.%s\n" (getQbeNameOfReg reg)
       | None -> "\tret\n")
+  | Qbe.LotsOfStmt s -> emitStmts s.stmts
   | _ -> xTODO uPOS "emit-stmt"
 
 and emitExpr expr =
@@ -59,7 +60,7 @@ and emitExpr expr =
   | Qbe.LoadExpr e -> fmt "load %s" (emitReg e.from)
   | Qbe.IdValExpr e -> fmt "copy %%x.%s" e.name
   | Qbe.RegExpr e -> fmt "copy %s" (emitReg e.var)
-  | _ -> xTODO uPOS "emit-expr"
+  | _ -> xTODO uPOS (Qbe.show_exprs expr)
 
 and emitArgExprs args =
   let rec aux args acc =

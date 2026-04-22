@@ -88,6 +88,8 @@ module Qbe = struct
     | Qbe.IdValExpr y -> y.var.name
     | Qbe.RegExpr y -> y.var.name
     | Qbe.TermExpr y -> y.var.name
+    | Qbe.BlockExpr y -> y.var.name
+    | Qbe.StoreExpr y -> y.var.name
     | _ -> xTODO uPOS (Qbe.show_exprs x)
   ;;
 
@@ -101,6 +103,8 @@ module Qbe = struct
     | Qbe.LoadExpr y -> y.type'
     | Qbe.IdValExpr y -> y.type'
     | Qbe.RegExpr y -> y.type'
+    | Qbe.BlockExpr y -> y.type'
+    | Qbe.StoreExpr y -> y.type'
     | _ -> xTODO uPOS "wut?"
   ;;
 end

@@ -27,16 +27,19 @@ let rec lowerFunction file env entity =
   | _ -> xNEVER uPOS "expected-function"
 
 and lowerBlocks file types body name =
-  let rec lowerStmts file types stmts acc =
+  let stmtIRs = match body with Ast.Block b -> lowerStmts file types b.stmts in
+  let node = Qbe.LabelStmt { name } :: stmtIRs in
+  node
+
+and lowerStmts file types stmts =
+  let rec aux file types stmts acc =
     match stmts with
     | [] -> List.flatten (List.rev acc)
     | h :: t ->
         let node = lowerStmt file types h in
-        lowerStmts file types t (node :: acc)
+        aux file types t (node :: acc)
   in
-  let stmtIRs = match body with Ast.Block b -> lowerStmts file types b.stmts [] in
-  let node = Qbe.BlockStmt { name } :: stmtIRs in
-  node
+  aux file types stmts []
 
 and lowerStmt file types stmt =
   let stmtIRs =
@@ -52,6 +55,7 @@ and lowerStmt file types stmt =
               | Qbe.FieldExpr e ->
                   Qbe.LetStmt { var = { name = fmt "%s.f%d" e.var.name e.idx }; expr }
               | Qbe.StoreExpr e -> Qbe.StoreStmt { expr }
+              | Qbe.BlockExpr e -> Qbe.LotsOfStmt { stmts = e.stmts }
               | _ -> Qbe.LetStmt { var = { name = getQbeRegOfExpr expr }; expr })
             exprIRs
         in
@@ -107,7 +111,13 @@ and lowerStmt file types stmt =
         let exprType = types.(Get.Ast.idOfExpr s.expr) in
         let stmtIRs =
           List.map
-            (fun expr -> Qbe.LetStmt { var = { name = getQbeRegOfExpr expr }; expr })
+            (fun expr ->
+              match expr with
+              | Qbe.FieldExpr e ->
+                  Qbe.LetStmt { var = { name = fmt "%s.f%d" e.var.name e.idx }; expr }
+              | Qbe.StoreExpr e -> Qbe.StoreStmt { expr }
+              | Qbe.BlockExpr e -> Qbe.LotsOfStmt { stmts = e.stmts }
+              | _ -> Qbe.LetStmt { var = { name = getQbeRegOfExpr expr }; expr })
             exprIRs
         in
         let nodes =
@@ -121,6 +131,37 @@ and lowerStmt file types stmt =
                     | _ -> Some Qbe.{ name = exprReg |> strOfInt });
                 };
             ]
+        in
+        nodes
+    | Ast.SetStmt s ->
+        let exprIRs, exprReg = lowerExpr file types s.expr in
+        let exprType = types.(Get.Ast.idOfExpr s.expr) in
+        let stmtIRs =
+          List.map
+            (fun expr ->
+              match expr with
+              | Qbe.FieldExpr e ->
+                  Qbe.LetStmt { var = { name = fmt "%s.f%d" e.var.name e.idx }; expr }
+              | Qbe.StoreExpr e -> Qbe.StoreStmt { expr }
+              | Qbe.BlockExpr e -> Qbe.LotsOfStmt { stmts = e.stmts }
+              | _ -> Qbe.LetStmt { var = { name = getQbeRegOfExpr expr }; expr })
+            exprIRs
+        in
+        let nodes =
+          stmtIRs
+          @
+          match exprType with
+          | Ast.UnitType -> []
+          | _ ->
+              [
+                Qbe.LetStmt
+                  {
+                    var = Qbe.{ name = strOfInt exprReg };
+                    expr =
+                      Qbe.RegExpr
+                        { var = { name = strOfInt exprReg }; type' = lowerType exprType };
+                  };
+              ]
         in
         nodes
     | _ -> []
@@ -165,6 +206,20 @@ and lowerExpr file types expr =
                   op;
                 };
             ]
+        in
+        nodes
+    | Ast.BlockExpr e ->
+        let stmts = match e.block with Ast.Block b -> b.stmts in
+        let stmtIRs = lowerStmts file types stmts in
+        let nodes =
+          [
+            Qbe.BlockExpr
+              {
+                var = { name = exprId |> strOfInt };
+                stmts = stmtIRs;
+                type' = lowerType exprType;
+              };
+          ]
         in
         nodes
     | Ast.InvokeExpr e ->

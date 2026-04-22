@@ -27,7 +27,8 @@ and stmts =
   | StoreStmt of { expr : exprs }
   | CallStmt of { expr : exprs }
   (* Extra *)
-  | BlockStmt of { name : string }
+  | LabelStmt of { name : string }
+  | LotsOfStmt of { stmts : stmts list }
 
 (* Expressions *)
 and exprs =
@@ -50,6 +51,8 @@ and exprs =
   | RegExpr of { var : regs; type' : types }
   | TermExpr of { var : regs; value : string; type' : types }
   | VoidExpr
+  (* Other *)
+  | BlockExpr of { var : regs; stmts : stmts list; type' : types }
 
 (* Binary expression operators *)
 and binops = AddOp | SubOp | MulOp | DivOp | RemOp | UDivOp | URemOp
