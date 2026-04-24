@@ -71,9 +71,10 @@ let dbgAst ast = write (Ast.show_file ast)
 let compileModule rootFile =
   let rootAst = Parser.parseFileExt rootFile in
   let mir = Lower.lowerFile rootAst in
-  let qbe = Emit.emitQbe mir in
+  (* let qbe = Emit.emitQbe mir in *)
   (* dbgAst rootAst; *)
-  Some (qbe, rootFile)
+  (* Some (qbe, rootFile) *)
+  None
 ;;
 
 (** Compile a file and verify it *)

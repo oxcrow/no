@@ -73,6 +73,25 @@ module Ast = struct
     | Ast.UnitVal y -> y.id
     | Ast.IdVal y -> y.id
   ;;
+
+  let typeOfExpr types x = types.(idOfExpr x)
+
+  let blockOfExpr x =
+    match x with
+    | Ast.BlockExpr b -> b.block
+    | _ -> xNEVER uPOS "Expected block expression."
+  ;;
+
+  let stmtsOfBlock x = match x with Ast.Block b -> b.stmts
+end
+
+(* *)
+module Cfg = struct
+  let regOfStmt x =
+    match x with Cfg.LetStmt y -> y.reg | Cfg.RetStmt y -> y.reg | Cfg.NoneStmt -> None
+  ;;
+
+  let stmtsOfBlock x = match x with Cfg.Block b -> b.stmts
 end
 
 (* *)
@@ -113,6 +132,9 @@ module X = struct
   let getAstName = Ast.name
   let getAstNameOfVar = Ast.nameOfVar
   let getAstTypeOfVar = Ast.typeOfVar
+  let getAstIdOfExpr = Ast.idOfExpr
+  let getAstTypeOfExpr = Ast.typeOfExpr
+  let getAstStmtsOfBlock = Ast.stmtsOfBlock
   let getQbeRegOfExpr = Qbe.regOfExpr
   let getQbeTypeOfExpr = Qbe.typeOfExpr
   let getQbeNameOfReg = Qbe.nameOfReg
