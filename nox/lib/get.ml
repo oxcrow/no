@@ -88,7 +88,11 @@ end
 (* *)
 module Cfg = struct
   let regOfStmt x =
-    match x with Cfg.LetStmt y -> y.reg | Cfg.RetStmt y -> y.reg | Cfg.NoneStmt -> None
+    match x with
+    | Cfg.LetStmt y -> y.reg
+    | Cfg.RetStmt y -> y.reg
+    | Cfg.CmdStmt y -> None
+    | Cfg.NoneStmt _ -> None
   ;;
 
   let stmtsOfBlock x = match x with Cfg.Block b -> b.stmts

@@ -15,7 +15,8 @@ and forks = Fork of { left : blocks; right : blocks option }
 and stmts =
   | LetStmt of { reg : regs option; expr : exprs; stmts : stmts list }
   | RetStmt of { reg : regs option; expr : exprs option; stmts : stmts list }
-  | NoneStmt
+  | CmdStmt of { expr : exprs; stmts : stmts list }
+  | NoneStmt of string
 
 (* Expressions *)
 and exprs =

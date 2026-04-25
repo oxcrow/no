@@ -62,58 +62,76 @@ and lowerStmt types stmt =
         let exprType = getAstTypeOfExpr types s.expr in
         let typeCFG = lowerType exprType in
         let exprCFG = lowerExpr types s.expr in
-        let regCFG = nxid () in
+
+        let exprRegCFG = nxid () in
+        let allocRegCFG = nxid () in
+        let fieldRegCFG = nxid () in
+
         let stmtCFG =
           let align = alignOfType exprType in
           let size = sizeOfType exprType in
           let allocCFG =
             Cfg.LetStmt
               {
-                reg = Some (regCFG, 0);
+                reg = Some (allocRegCFG, 0);
                 expr = Cfg.AllocExpr { type' = typeCFG; align; size; stmts = [] };
                 stmts = [];
               }
           in
-          let fieldCFG =
+          let fieldCFG, storeCFG =
             let offsets, sizes = calcStructLayout exprType in
-            let fieldRegCFG = nxid () in
-            let rec createField types offsets sizes idx acc =
+            let rec createField types offsets sizes idx fieldAcc storeAcc =
               match (types, offsets, sizes) with
-              | [], [], [] -> List.rev acc
+              | [], [], [] -> (List.rev fieldAcc, List.rev storeAcc)
               | th :: tt, oh :: ot, sh :: st ->
-                  let node =
+                  let field =
                     Cfg.LetStmt
                       {
                         reg = Some (fieldRegCFG, idx);
                         expr =
                           Cfg.FieldExpr
-                            { type' = th; offset = oh; size = sh; from = (regCFG, 0) };
+                            {
+                              type' = th;
+                              offset = oh;
+                              size = sh;
+                              from = (allocRegCFG, idx);
+                            };
                         stmts = [];
                       }
                   in
-                  createField tt ot st (idx + 1) (node :: acc)
+                  let store =
+                    Cfg.CmdStmt
+                      {
+                        expr =
+                          Cfg.StoreExpr
+                            {
+                              type' =
+                                (match typeCFG with
+                                | Cfg.TupleType t ->
+                                    List.nth_opt t.type' idx |> xSOME uPOS
+                                | _ -> typeCFG);
+                              dest = (allocRegCFG, idx);
+                              from = (exprRegCFG, 0);
+                              stmts = [];
+                            };
+                        stmts = [];
+                      }
+                  in
+
+                  createField tt ot st (idx + 1) (field :: fieldAcc) (store :: storeAcc)
               | _ -> xNEVER uPOS "wut?"
             in
-            createField (listOfType typeCFG) offsets sizes 0 []
-          in
-          let storeCFG =
-            [
-              Cfg.LetStmt
-                {
-                  reg = None;
-                  expr =
-                    Cfg.StoreExpr
-                      { type' = Cfg.UnitType; dest = (0, 0); from = (0, 0); stmts = [] };
-                  stmts = [];
-                };
-            ]
+            createField (listOfType typeCFG) offsets sizes 0 [] []
           in
           [ allocCFG ] @ fieldCFG @ storeCFG
         in
-        let node = Cfg.LetStmt { reg = None; expr = exprCFG; stmts = stmtCFG } in
+
+        let node =
+          Cfg.LetStmt { reg = Some (exprRegCFG, 0); expr = exprCFG; stmts = stmtCFG }
+        in
         node
-    | Ast.SetStmt s -> Cfg.NoneStmt
-    | Ast.ReturnStmt s -> Cfg.NoneStmt
+    | Ast.SetStmt s -> Cfg.NoneStmt "SetStmt"
+    | Ast.ReturnStmt s -> Cfg.NoneStmt "RetStmt"
     | _ -> xTODO uPOS "lower-stmt"
   in
   stmtCFG

@@ -106,16 +106,21 @@ and inferArgs (file : string) (env : Env.env) (types : Ast.types array)
 (* Infer variables *)
 and inferVars (file : string) (env : Env.env) (types : Ast.types array)
     (vars : Ast.vars list) (expr : Ast.exprs) =
-  let type' = inferExprType file env types expr in
-  let id = Get.Ast.idOfExpr expr in
-  types.(id) <- type';
+  let exprType = inferExprType file env types expr in
+  let exprId = Get.Ast.idOfExpr expr in
+  types.(exprId) <- exprType;
   let rec aux file env types vars varIdx =
     match vars with
     | [] -> (env, types)
     | head :: tail ->
         let expectedType = match head with Ast.Variable v -> v.type' in
         let type' =
-          match type' with Ast.TupleType v -> List.nth v.types varIdx | _ -> type'
+          match List.length vars with
+          | 1 -> exprType
+          | _ -> (
+              match exprType with
+              | Ast.TupleType v -> List.nth v.types varIdx
+              | _ -> exprType)
         in
         let id = match head with Ast.Variable v -> v.id in
         assure uPOS
@@ -142,9 +147,8 @@ and inferVars (file : string) (env : Env.env) (types : Ast.types array)
         (env, types)
   in
   assure uPOS
-    (match type' with
-    | Ast.TupleType v -> (
-        match List.length v.types = List.length vars with true -> true | false -> false)
+    (match exprType with
+    | Ast.TupleType v -> List.length v.types = List.length vars || List.length vars = 1
     | _ -> true)
     (fun _ ->
       raise
