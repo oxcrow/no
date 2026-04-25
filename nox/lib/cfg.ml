@@ -13,28 +13,45 @@ and forks = Fork of { left : blocks; right : blocks option }
 
 (* Statements *)
 and stmts =
-  | LetStmt of { reg : regs option; expr : exprs; stmts : stmts list }
-  | RetStmt of { reg : regs option; expr : exprs option; stmts : stmts list }
-  | NoneStmt
+  | LetStmt of { reg : regs option; name : string option; expr : exprs; stmts : smx list }
+  | SetStmt of { reg : regs option; expr : exprs; stmts : smx list }
+  | RetStmt of { reg : regs option; expr : exprs option; stmts : smx list }
+  | CmdStmt of { expr : exprs; stmts : smx list }
+  | NoneStmt of string
+
+and smx = Before of stmts | After of stmts
 
 (* Expressions *)
 and exprs =
   (* Compound *)
-  | TupleExpr of { type' : types list; expr : exprs list; stmts : stmts list }
-  | CallExpr of { name : string; args : exprs list; type' : types; stmts : stmts list }
-  | BinaryExpr of { lexpr : exprs; rexpr : exprs; type' : types; stmts : stmts list }
-  | BlockExpr of { type' : types; stmts : stmts list }
+  | TupleExpr of { reg : regs option; type' : types list; stmts : smx list }
+  | CallExpr of {
+      reg : regs option;
+      name : string;
+      args : exprs list;
+      type' : types;
+      stmts : smx list;
+    }
+  | BinaryExpr of {
+      reg : regs option;
+      lexpr : exprs;
+      rexpr : exprs;
+      type' : types;
+      stmts : smx list;
+    }
+  | BlockExpr of { reg : regs option; type' : types; stmts : stmts list }
   (* Simple *)
-  | IdExpr of { name : string; type' : types; stmts : stmts list }
-  | FloatExpr of { value : string; stmts : stmts list }
-  | IntExpr of { value : string; stmts : stmts list }
-  | UnitExpr of { stmts : stmts list }
+  | IdExpr of { reg : regs option; name : string; type' : types; stmts : smx list }
+  | FloatExpr of { reg : regs option; value : string; stmts : smx list }
+  | IntExpr of { reg : regs option; value : string; stmts : smx list }
+  | UnitExpr of { reg : regs option; stmts : smx list }
   (* Extra *)
-  | AllocExpr of { type' : types; align : int; size : int; stmts : stmts list }
-  | StoreExpr of { type' : types; from : regs; dest : regs; stmts : stmts list }
-  | LoadExpr of { type' : types; from : regs; stmts : stmts list }
+  | AllocExpr of { type' : types; align : int; size : int; stmts : smx list }
+  | StoreExpr of { type' : types; from : regs; dest : regs; stmts : smx list }
+  | LoadExpr of { type' : types; from : regs; stmts : smx list }
   | FieldExpr of { type' : types; offset : int; size : int; from : regs }
-  | NoneExpr
+  | BlitExpr of { size : int; from : regs; dest : regs; stmts : smx list }
+  | NoneExpr of string
 
 (* Types *)
 and types =
@@ -45,4 +62,7 @@ and types =
 
 (* Scopes *)
 and scopes = ExportScope | LocalScope
-and regs = int * int
+
+(* Registers *)
+and regs = regKinds option * int * int
+and regKinds = AllocReg | FieldReg | DataReg

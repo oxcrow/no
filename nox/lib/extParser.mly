@@ -31,7 +31,7 @@
 %token AS AND ELSE EXPORT FALSE FLOAT FN IF INT LET MOD MUT NOT OR RETURN SET STRUCT TRUE UNDEFINED USE
 %token EQEQ NE EQ LE GE LT GT
 
-%token SEMICOLON COLON COMMA AT DOTDOT DOT QUESTION TICK EXCLAMATION AMPERSAND HASH
+%token SEMICOLON COLON COMMA AT DOTDOT DOT QUESTION TICK APOSTROPHE EXCLAMATION AMPERSAND HASH
 %token PERCENT DOLLAR LBRACE RBRACE LPAREN RPAREN LBRACK RBRACK LANGLE RANGLE
 %token PLUS MINUS STAR SLASH CARET BAR
 
@@ -187,7 +187,7 @@ args:
     | s=states; h=shadow; n=name; t=types; { Ast.Variable {name=n; state=s; shadow=h; type'=(Some t); id=(nxid())} }
 
 vars:
-    | s=states; h=shadow; n=name; t=option(types); { Ast.Variable {name=n; state=s; shadow=h; type'=t; id=(nxid())} }
+    | s=states; n=name; h=shadow; t=option(types); { Ast.Variable {name=n; state=s; shadow=h; type'=t; id=(nxid())} }
 
 returnType:
     | { Ast.UnitType }
@@ -214,7 +214,7 @@ name:
 
 shadow:
     | { false }
-    | PLUS { true }
+    | APOSTROPHE { true }
 
 seplist(SEP, NODE):
     | { [] }

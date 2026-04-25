@@ -57,6 +57,7 @@ int yycolumn = 1;
 ","         { return COMMA; }
 "."         { return DOT; }
 "|"         { return BAR; }
+"'"         { return APOSTROPHE; }
 
 "!="        { return NOTEQ; }
 "=="        { return EQEQ; }

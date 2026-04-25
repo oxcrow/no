@@ -58,6 +58,7 @@ rule token = parse
   | "."         { ExtParser.DOT }
   | "?"         { ExtParser.QUESTION }
   | "`"         { ExtParser.TICK }
+  | "'"         { ExtParser.APOSTROPHE }
   | "!"         { ExtParser.EXCLAMATION }
   | "&"         { ExtParser.AMPERSAND }
   | "#"         { ExtParser.HASH }

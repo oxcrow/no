@@ -13,7 +13,7 @@ int yylex(void);
 %define parse.error verbose
 
 %token AS ELSE EXPORT FN INT IF LET MATCH MUT MOD NEW RETURN USE
-%token SEMICOLON QUESTION AMPERSAND COLON COMMA DOT BAR
+%token SEMICOLON QUESTION AMPERSAND COLON COMMA DOT BAR APOSTROPHE
 %token NOTEQ EQEQ EQ AT LE GE LT GT NOT
 %token PLUS MINUS STAR SLASH
 %token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK
@@ -286,12 +286,18 @@ varNonEmptyList
 
 // Variables
 var
-    : state IDVAL typeOption
+    : state IDVAL shadow typeOption
     ;
 
 // States
 state
     : MUT
+    | %empty
+    ;
+
+// Shadows
+shadow
+    : APOSTROPHE
     | %empty
     ;
 

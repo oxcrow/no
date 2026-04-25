@@ -88,7 +88,22 @@ end
 (* *)
 module Cfg = struct
   let regOfStmt x =
-    match x with Cfg.LetStmt y -> y.reg | Cfg.RetStmt y -> y.reg | Cfg.NoneStmt -> None
+    match x with
+    | Cfg.LetStmt y -> y.reg
+    | Cfg.SetStmt y -> y.reg
+    | Cfg.RetStmt y -> y.reg
+    | Cfg.CmdStmt y -> None
+    | Cfg.NoneStmt _ -> None
+  ;;
+
+  let regOfExpr x =
+    match x with
+    | Cfg.TupleExpr y -> y.reg
+    | Cfg.CallExpr y -> y.reg
+    | Cfg.BlockExpr y -> y.reg
+    | Cfg.IntExpr y -> y.reg
+    | Cfg.UnitExpr y -> None
+    | _ -> xTODO uPOS "reg-of-expr"
   ;;
 
   let stmtsOfBlock x = match x with Cfg.Block b -> b.stmts
