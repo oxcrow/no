@@ -74,6 +74,7 @@ and lowerStmt types stmt =
             Cfg.LetStmt
               {
                 reg = Some (allocRegCFG, 0);
+                name = Some (List.hd varNames);
                 expr = Cfg.AllocExpr { type' = typeCFG; align; size; stmts = [] };
                 stmts = [];
               }
@@ -88,6 +89,7 @@ and lowerStmt types stmt =
                     Cfg.LetStmt
                       {
                         reg = Some (fieldRegCFG, idx);
+                        name = None;
                         expr =
                           Cfg.FieldExpr
                             {
@@ -127,7 +129,8 @@ and lowerStmt types stmt =
         in
 
         let node =
-          Cfg.LetStmt { reg = Some (exprRegCFG, 0); expr = exprCFG; stmts = stmtCFG }
+          Cfg.LetStmt
+            { reg = Some (exprRegCFG, 0); name = None; expr = exprCFG; stmts = stmtCFG }
         in
         node
     | Ast.SetStmt s -> Cfg.NoneStmt "SetStmt"

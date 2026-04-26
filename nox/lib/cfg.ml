@@ -13,7 +13,7 @@ and forks = Fork of { left : blocks; right : blocks option }
 
 (* Statements *)
 and stmts =
-  | LetStmt of { reg : regs option; expr : exprs; stmts : stmts list }
+  | LetStmt of { reg : regs option; name: string option; expr : exprs; stmts : stmts list }
   | RetStmt of { reg : regs option; expr : exprs option; stmts : stmts list }
   | CmdStmt of { expr : exprs; stmts : stmts list }
   | NoneStmt of string
