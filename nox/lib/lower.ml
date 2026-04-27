@@ -58,7 +58,7 @@ and lowerStmt types stmt =
   let stmtCFG =
     match stmt with
     | Ast.LetStmt s ->
-        let varNames = List.map Get.Ast.nameOfVar s.vars in
+        let varNames = List.map getAstNameOfVar s.vars in
         let exprType = getAstTypeOfExpr types s.expr in
         let typeCFG = lowerType exprType in
         let exprCFG = lowerExpr types s.expr in
