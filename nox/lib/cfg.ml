@@ -52,4 +52,7 @@ and types =
 
 (* Scopes *)
 and scopes = ExportScope | LocalScope
-and regs = int * int
+
+(* Registers *)
+and regs = regKinds option * int * int
+and regKinds = AllocReg | FieldReg | VarReg

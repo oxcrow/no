@@ -73,7 +73,7 @@ and lowerStmt types stmt =
           let allocCFG =
             Cfg.LetStmt
               {
-                reg = Some (allocRegCFG, 0);
+                reg = Some (Some Cfg.AllocReg, allocRegCFG, 0);
                 name = Some (List.hd varNames);
                 expr = Cfg.AllocExpr { type' = typeCFG; align; size; stmts = [] };
                 stmts = [];
@@ -88,7 +88,7 @@ and lowerStmt types stmt =
                   let field =
                     Cfg.LetStmt
                       {
-                        reg = Some (fieldRegCFG, idx);
+                        reg = Some (Some Cfg.FieldReg, fieldRegCFG, idx);
                         name = None;
                         expr =
                           Cfg.FieldExpr
@@ -96,7 +96,7 @@ and lowerStmt types stmt =
                               type' = th;
                               offset = oh;
                               size = sh;
-                              from = (allocRegCFG, idx);
+                              from = (Some Cfg.AllocReg, allocRegCFG, idx);
                             };
                         stmts = [];
                       }
@@ -112,8 +112,8 @@ and lowerStmt types stmt =
                                 | Cfg.TupleType t ->
                                     List.nth_opt t.type' idx |> xSOME uPOS
                                 | _ -> typeCFG);
-                              dest = (allocRegCFG, idx);
-                              from = (exprRegCFG, 0);
+                              dest = (Some Cfg.AllocReg, allocRegCFG, idx);
+                              from = (None, exprRegCFG, 0);
                               stmts = [];
                             };
                         stmts = [];
@@ -130,7 +130,12 @@ and lowerStmt types stmt =
 
         let node =
           Cfg.LetStmt
-            { reg = Some (exprRegCFG, 0); name = None; expr = exprCFG; stmts = stmtCFG }
+            {
+              reg = Some (Some Cfg.VarReg, exprRegCFG, 0);
+              name = None;
+              expr = exprCFG;
+              stmts = stmtCFG;
+            }
         in
         node
     | Ast.SetStmt s -> Cfg.NoneStmt "SetStmt"
