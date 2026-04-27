@@ -146,7 +146,7 @@ and lowerExpr types expr =
     match expr with
     | Ast.BlockExpr e ->
         let block = lowerBlock types None (Get.Ast.blockOfExpr expr) in
-        Cfg.BlockExpr { type' = Cfg.UnitType; stmts = Get.Cfg.stmtsOfBlock block }
+        Cfg.BlockExpr { type' = lowerType exprType; stmts = Get.Cfg.stmtsOfBlock block }
     | Ast.IntVal e -> Cfg.IntExpr { value = e.value; stmts = [] }
     | Ast.UnitVal _ -> Cfg.IntExpr { value = "0"; stmts = [] }
     | _ -> xTODO uPOS ("lower-expr" ^ Ast.show_exprs expr)
