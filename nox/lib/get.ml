@@ -90,6 +90,7 @@ module Cfg = struct
   let regOfStmt x =
     match x with
     | Cfg.LetStmt y -> y.reg
+    | Cfg.SetStmt y -> y.reg
     | Cfg.RetStmt y -> y.reg
     | Cfg.CmdStmt y -> None
     | Cfg.NoneStmt _ -> None
