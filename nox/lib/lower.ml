@@ -38,42 +38,54 @@ let rec lowerFunction file env entity =
           {
             scope = lowerScope f.scope;
             name = getAstName f.name;
-            blocks = lowerBlock types (Some "start") f.body;
+            blocks = lowerBlock env types (Some "start") f.body;
           }
       in
       node
   | _ -> xNEVER uPOS "expected-function"
 
-and lowerBlock types label block =
-  let node =
-    Cfg.Block { label; stmts = lowerStmts types (getAstStmtsOfBlock block); rest = None }
-  in
+and lowerBlock env types label block =
+  let env = Env.addScope env in
+  let env, stmts = lowerStmts env types (getAstStmtsOfBlock block) in
+  let node = Cfg.Block { label; stmts; rest = None } in
+  let env = Env.removeScope env in
   node
 
-and lowerStmts types stmts =
-  let rec aux types stmts acc =
+and lowerStmts env types stmts =
+  let rec aux env types stmts acc =
     match stmts with
-    | [] -> List.rev acc
+    | [] -> (env, List.rev acc)
     | h :: t ->
-        let node = lowerStmt types h in
-        aux types t (node :: acc)
+        let env, node = lowerStmt env types h in
+        aux env types t (node :: acc)
   in
-  aux types stmts []
+  aux env types stmts []
 
-and lowerStmt types stmt =
-  let stmtCFG =
+and lowerStmt env types stmt =
+  let env, stmtCFG =
     match stmt with
     | Ast.LetStmt s ->
         let varNames = List.map getAstNameOfVar s.vars in
         let exprTypeAST = getAstTypeOfExpr types s.expr in
         let exprTypeCFG = lowerType exprTypeAST in
 
-        let exprRegCFG, exprCFG = lowerExpr types s.expr in
+        let exprRegCFG, exprCFG = lowerExpr env types s.expr in
 
-        let stmtCFG =
+        let env, stmtCFG =
           let offsets, sizes = calcStructLayout exprTypeAST in
           let align = alignOfType exprTypeAST in
           let size = sizeOfType exprTypeAST in
+
+          let rec trackVariable (env : Env.env) names idx =
+            match names with
+            | [] -> env
+            | nh :: nt ->
+                let env =
+                  Env.addRecord env (Env.Reg { name = nh; reg = (exprRegCFG, idx) }) nh
+                in
+                trackVariable env nt (idx + 1)
+          in
+          let env = trackVariable env varNames 0 in
 
           let allocCFG =
             [
@@ -151,7 +163,7 @@ and lowerStmt types stmt =
                 ]
           in
 
-          allocCFG @ fieldCFG @ storeCFG
+          (env, allocCFG @ fieldCFG @ storeCFG)
         in
 
         let node =
@@ -163,14 +175,38 @@ and lowerStmt types stmt =
               stmts = stmtCFG;
             }
         in
-        node
-    | Ast.SetStmt s -> Cfg.NoneStmt "SetStmt"
-    | Ast.ReturnStmt s -> Cfg.NoneStmt "RetStmt"
+        (env, node)
+    | Ast.SetStmt s ->
+        let exprTypeAST = getAstTypeOfExpr types s.expr in
+        let exprTypeCFG = lowerType exprTypeAST in
+
+        let exprRegCFG, exprCFG = lowerExpr env types s.expr in
+
+        let node =
+          Cfg.SetStmt
+            { reg = Some (Some Cfg.DataReg, exprRegCFG, 0); expr = exprCFG; stmts = [] }
+        in
+        (env, node)
+    | Ast.ReturnStmt s ->
+        let exprTypeAST = getAstTypeOfExpr types s.expr in
+        let exprTypeCFG = lowerType exprTypeAST in
+
+        let exprRegCFG, exprCFG = lowerExpr env types s.expr in
+
+        let node =
+          Cfg.RetStmt
+            {
+              reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
+              expr = Some exprCFG;
+              stmts = [];
+            }
+        in
+        (env, node)
     | _ -> xTODO uPOS "lower-stmt"
   in
-  stmtCFG
+  (env, stmtCFG)
 
-and lowerExpr types expr =
+and lowerExpr env types expr =
   let exprId = getAstIdOfExpr expr in
   let exprType = getAstTypeOfExpr types expr in
   let align = alignOfType exprType in
@@ -181,7 +217,7 @@ and lowerExpr types expr =
   let exprCFG =
     match expr with
     | Ast.BlockExpr e ->
-        let block = lowerBlock types None (Get.Ast.blockOfExpr expr) in
+        let block = lowerBlock env types None (Get.Ast.blockOfExpr expr) in
         let exprRegCFG = nxid () in
         Cfg.BlockExpr
           {
@@ -191,7 +227,7 @@ and lowerExpr types expr =
           }
     | Ast.TupleVal e ->
         let exprRegCFGs, exprCFGs =
-          List.split (List.map (fun expr -> lowerExpr types expr) e.value)
+          List.split (List.map (fun expr -> lowerExpr env types expr) e.value)
         in
         let exprRegCFG = nxid () in
         let stmtCFG =
@@ -270,12 +306,24 @@ and lowerExpr types expr =
           in
           createField (listOfType exprTypeCFG) offsets sizes exprRegCFGs 0 [] []
         in
-        (* List.iter (fun x -> print_endline (Cfg.show_exprs x)) exprCFGs; *)
         Cfg.TupleExpr
           {
             reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
             type' = List.map (fun expr -> lowerType (getAstTypeOfExpr types expr)) e.value;
             stmts = stmtCFG @ [ allocCFG ] @ fieldCFG @ storeCFG;
+          }
+    | Ast.IdVal e ->
+        let exprRegCFG, exprIdxCFG =
+          match Hashtbl.find_opt env.table (getAstName e.name) |> xSOME uPOS with
+          | Env.Reg x -> x.reg
+          | _ -> xNEVER uPOS "wut?"
+        in
+        Cfg.IdExpr
+          {
+            reg = Some (Some Cfg.DataReg, exprRegCFG, exprIdxCFG);
+            name = getAstName e.name;
+            type' = lowerType (getAstTypeOfExpr types expr);
+            stmts = [];
           }
     | Ast.IntVal e ->
         let exprRegCFG = nxid () in

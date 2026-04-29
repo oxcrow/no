@@ -1,14 +1,9 @@
-/*
 export fn main() int {
-	let x = {
-		let x = (0, (), 1);
-		:x
+	let x, y, z = {
+		let x = 0;
+		let y = ();
+		let z = 1;
+		:(x, y, z)
 	};
-	:0
-}
-*/
-
-export fn main() int {
-	let x, y, z = (0, (), 1);
-	:x
+	:z
 }

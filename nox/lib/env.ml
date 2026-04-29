@@ -7,6 +7,7 @@ and record =
   | Variable of { name : string; type' : Ast.types; loc : Ast.loc }
   | Struct of { name : string; env : env; loc : Ast.loc }
   | Enum of unit
+  | Reg of { name : string; reg : int * int }
 
 let isFunction x = match x with Ast.Function _ -> true | _ -> false
 
