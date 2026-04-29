@@ -65,28 +65,33 @@ and lowerStmt types stmt =
     match stmt with
     | Ast.LetStmt s ->
         let varNames = List.map getAstNameOfVar s.vars in
-        let exprType = getAstTypeOfExpr types s.expr in
-        let typeCFG = lowerType exprType in
+        let exprTypeAST = getAstTypeOfExpr types s.expr in
+        let exprTypeCFG = lowerType exprTypeAST in
 
         let exprRegCFG, exprCFG = lowerExpr types s.expr in
 
         let stmtCFG =
-          let align = alignOfType exprType in
-          let size = sizeOfType exprType in
+          let offsets, sizes = calcStructLayout exprTypeAST in
+          let align = alignOfType exprTypeAST in
+          let size = sizeOfType exprTypeAST in
+
           let allocCFG =
-            Cfg.LetStmt
-              {
-                reg = Some (Some Cfg.AllocReg, exprRegCFG, 0);
-                name = Some (List.hd varNames);
-                expr = Cfg.AllocExpr { type' = typeCFG; align; size; stmts = [] };
-                stmts = [];
-              }
+            [
+              Cfg.After
+                (Cfg.LetStmt
+                   {
+                     reg = Some (Some Cfg.AllocReg, exprRegCFG, 0);
+                     name = None;
+                     expr = Cfg.AllocExpr { type' = exprTypeCFG; align; size; stmts = [] };
+                     stmts = [];
+                   });
+            ]
           in
-          let fieldCFG, storeCFG =
-            let offsets, sizes = calcStructLayout exprType in
-            let rec createField types offsets sizes idx fieldAcc storeAcc =
+
+          let fieldCFG =
+            let rec createField types offsets sizes idx fieldAcc =
               match (types, offsets, sizes) with
-              | [], [], [] -> (List.rev fieldAcc, storeAcc)
+              | [], [], [] -> List.rev fieldAcc
               | th :: tt, oh :: ot, sh :: st ->
                   let field =
                     Cfg.LetStmt
@@ -104,28 +109,49 @@ and lowerStmt types stmt =
                         stmts = [];
                       }
                   in
-                  let store =
-                    Cfg.CmdStmt
-                      {
-                        expr =
-                          Cfg.BlitExpr
-                            {
-                              size;
-                              from = (Some Cfg.DataReg, exprRegCFG, 0);
-                              dest = (Some Cfg.AllocReg, exprRegCFG, 0);
-                              stmts = [];
-                            };
-                        stmts = [];
-                      }
-                  in
-
                   createField tt ot st (idx + 1) (Cfg.After field :: fieldAcc)
-                    [ Cfg.After store ]
               | _ -> xNEVER uPOS "wut?"
             in
-            createField (listOfType typeCFG) offsets sizes 0 [] []
+            createField (listOfType exprTypeCFG) offsets sizes 0 []
           in
-          [ Cfg.After allocCFG ] @ fieldCFG @ storeCFG
+
+          let storeCFG =
+            match exprTypeAST with
+            | Ast.TupleType _ ->
+                [
+                  Cfg.After
+                    (Cfg.CmdStmt
+                       {
+                         expr =
+                           Cfg.BlitExpr
+                             {
+                               size;
+                               from = (Some Cfg.AllocReg, exprRegCFG - 1, 0);
+                               dest = (Some Cfg.AllocReg, exprRegCFG, 0);
+                               stmts = [];
+                             };
+                         stmts = [];
+                       });
+                ]
+            | _ ->
+                [
+                  Cfg.After
+                    (Cfg.CmdStmt
+                       {
+                         expr =
+                           Cfg.StoreExpr
+                             {
+                               type' = exprTypeCFG;
+                               from = (Some Cfg.DataReg, exprRegCFG - 1, 0);
+                               dest = (Some Cfg.AllocReg, exprRegCFG, 0);
+                               stmts = [];
+                             };
+                         stmts = [];
+                       });
+                ]
+          in
+
+          allocCFG @ fieldCFG @ storeCFG
         in
 
         let node =
@@ -150,13 +176,13 @@ and lowerExpr types expr =
   let align = alignOfType exprType in
   let size = sizeOfType exprType in
 
-  let exprRegCFG = nxid () in
   let exprTypeCFG = lowerType exprType in
 
   let exprCFG =
     match expr with
     | Ast.BlockExpr e ->
         let block = lowerBlock types None (Get.Ast.blockOfExpr expr) in
+        let exprRegCFG = nxid () in
         Cfg.BlockExpr
           {
             reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
@@ -167,6 +193,7 @@ and lowerExpr types expr =
         let exprRegCFGs, exprCFGs =
           List.split (List.map (fun expr -> lowerExpr types expr) e.value)
         in
+        let exprRegCFG = nxid () in
         let stmtCFG =
           List.map
             (fun expr ->
@@ -251,13 +278,15 @@ and lowerExpr types expr =
             stmts = stmtCFG @ [ allocCFG ] @ fieldCFG @ storeCFG;
           }
     | Ast.IntVal e ->
+        let exprRegCFG = nxid () in
         Cfg.IntExpr
           { reg = Some (Some Cfg.DataReg, exprRegCFG, 0); value = e.value; stmts = [] }
     | Ast.UnitVal _ ->
+        let exprRegCFG = nxid () in
         Cfg.UnitExpr { reg = Some (Some Cfg.DataReg, exprRegCFG, 0); stmts = [] }
     | _ -> xTODO uPOS ("lower-expr" ^ Ast.show_exprs expr)
   in
-  (exprRegCFG, exprCFG)
+  (cxid (), exprCFG)
 
 and lowerScope scope =
   match scope with Ast.PublicScope -> Cfg.ExportScope | _ -> Cfg.LocalScope
@@ -293,11 +322,13 @@ and alignOfType type' =
       let aligns = List.map alignOfType t.types in
       let sum = List.fold_left max (List.hd aligns) (List.tl aligns) in
       sum
-  | Ast.FunctionType t -> sizeOfType t.type'
+  | Ast.FunctionType t -> alignOfType t.type'
   | Ast.FloatType -> 8
   | Ast.IntType -> 8
   | Ast.UnitType -> 8 (* Until we figure out how to handle zero sized structs. *)
   | _ -> xTODO uPOS "align-of-type"
+
+and alignOfTypeCFG type' = ()
 
 and calcStructLayout type' =
   let rec aux types offset accOffset accSize =
@@ -344,6 +375,14 @@ and lowerType type' =
   | Ast.IntType -> Cfg.IntType
   | Ast.UnitType -> Cfg.UnitType
   | _ -> xTODO uPOS "lower-type"
+
+and listOfTypeAst type' =
+  match type' with
+  | Ast.TupleType t -> t.types
+  | Ast.FloatType -> [ type' ]
+  | Ast.IntType -> [ type' ]
+  | Ast.UnitType -> [ type' ]
+  | _ -> xTODO uPOS "list-of-type-ast"
 
 and listOfType type' =
   match type' with

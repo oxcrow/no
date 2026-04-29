@@ -102,7 +102,7 @@ module Cfg = struct
     | Cfg.CallExpr y -> y.reg
     | Cfg.BlockExpr y -> y.reg
     | Cfg.IntExpr y -> y.reg
-    | Cfg.UnitExpr y -> None
+    | Cfg.UnitExpr y -> y.reg
     | _ -> xTODO uPOS "reg-of-expr"
   ;;
 

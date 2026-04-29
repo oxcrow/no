@@ -109,17 +109,20 @@ and inferVars (file : string) (env : Env.env) (types : Ast.types array)
   let exprType = inferExprType file env types expr in
   let exprId = Get.Ast.idOfExpr expr in
   types.(exprId) <- exprType;
+
+  let numVars = List.length vars in
+
   let rec aux file env types vars varIdx =
     match vars with
     | [] -> (env, types)
     | head :: tail ->
         let expectedType = match head with Ast.Variable v -> v.type' in
         let type' =
-          match List.length vars with
+          match numVars with
           | 1 -> exprType
           | _ -> (
               match exprType with
-              | Ast.TupleType v -> List.nth v.types varIdx
+              | Ast.TupleType v -> List.nth_opt v.types varIdx |> xSOME uPOS
               | _ -> exprType)
         in
         let id = match head with Ast.Variable v -> v.id in
@@ -146,6 +149,7 @@ and inferVars (file : string) (env : Env.env) (types : Ast.types array)
         types.(id) <- type';
         (env, types)
   in
+
   assure uPOS
     (match exprType with
     | Ast.TupleType v -> List.length v.types = List.length vars || List.length vars = 1
@@ -162,6 +166,7 @@ and inferVars (file : string) (env : Env.env) (types : Ast.types array)
                     (Error.UnknownParserError
                        (file, Get.Ast.locOfExpr expr |> Get.Ast.locOfLoc)));
            }));
+
   aux file env types vars 0
 
 (* Infer assignments *)

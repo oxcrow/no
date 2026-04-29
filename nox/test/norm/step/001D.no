@@ -9,6 +9,6 @@ export fn main() int {
 */
 
 export fn main() int {
-	let x = (0, (), 1);
-	:0
+	let x, y, z = (0, (), 1);
+	:x
 }
