@@ -1,0 +1,6 @@
+export fn main() int {
+	let x, y = {
+		:(0, 0)
+	};
+	:x
+}
