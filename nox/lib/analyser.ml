@@ -382,7 +382,7 @@ let analyseFunction (file : string) (env : Env.env) (entity : Ast.entities) =
   | Ast.Function f ->
       let env, types = inferFunction file (Get.Ast.name f.name) env entity in
       (* Ensure all expression types are inferred before lowering *)
-      Array.iter
+      (* Array.iter
         (fun t ->
           if t = Ast.NoneType then
             raise
@@ -392,8 +392,8 @@ let analyseFunction (file : string) (env : Env.env) (entity : Ast.entities) =
                    source = xSOURCE uPOS;
                    error = None;
                  }))
-        types;
-      (* Array.iter (fun t -> print_endline (Ast.show_types t)) types; *)
+        types;*)
+      (*Array.iter (fun t -> print_endline (Ast.show_types t)) types;*)
       types
   | _ ->
       raise

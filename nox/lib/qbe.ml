@@ -63,7 +63,6 @@ and linkages =
   | SectionLink (* section : for linker data storage *)
 
 and args = { name : string; type' : types }
-and regs = { name : string }
 
 and types =
   | IdType of string (* :ID : for agregates *)
@@ -82,3 +81,7 @@ and sigils =
   | BlockSigil (* @ : for block labels *)
 
 and scopes = ExportScope | PrivateScope
+
+(* Registers *)
+and regs = { kind : regKinds; baseId : int; nextId : int }
+and regKinds = AllocReg | FieldReg | LoadReg | DataReg

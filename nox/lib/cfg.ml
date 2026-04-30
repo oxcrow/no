@@ -40,22 +40,29 @@ and exprs =
       stmts : smx list;
     }
   | BlockExpr of { reg : regs option; type' : types; stmts : stmts list }
+  | LoadExpr of {
+      reg : regs option;
+      name : string option;
+      type' : types;
+      from : regs;
+      stmts : smx list;
+    }
+  | RegExpr of { reg : regs option; type' : types; stmts : smx list }
   (* Simple *)
   | IdExpr of { reg : regs option; name : string; type' : types; stmts : smx list }
   | FloatExpr of { reg : regs option; value : string; stmts : smx list }
   | IntExpr of { reg : regs option; value : string; stmts : smx list }
-  | UnitExpr of { reg : regs option; stmts : smx list }
+  | UnitExpr of { reg : regs option; value : string; stmts : smx list }
   (* Extra *)
   | AllocExpr of { type' : types; align : int; size : int; stmts : smx list }
   | StoreExpr of { type' : types; from : regs; dest : regs; stmts : smx list }
-  | LoadExpr of { type' : types; from : regs; stmts : smx list }
   | FieldExpr of { type' : types; offset : int; size : int; from : regs }
   | BlitExpr of { size : int; from : regs; dest : regs; stmts : smx list }
   | NoneExpr of string
 
 (* Types *)
 and types =
-  | TupleType of { type' : types list; offsets : int option list; sizes : int list }
+  | TupleType of { type' : types list; offsets : int list; sizes : int list }
   | FloatType
   | IntType
   | UnitType

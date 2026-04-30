@@ -66,11 +66,11 @@ and emitArgExprs args =
   let rec aux args acc =
     match args with
     | [] -> String.concat ", " (List.rev acc)
-    | head :: tail ->
+    | h :: t ->
         let arg =
-          fmt "%s %%x.%s" (emitType (Get.Qbe.typeOfExpr head)) (Get.Qbe.regOfExpr head)
+          fmt "%s %%x.%s" (emitType (Get.Qbe.typeOfExpr h)) (Get.Qbe.regOfExpr h)
         in
-        aux tail (arg :: acc)
+        aux t (arg :: acc)
   in
   aux args []
 

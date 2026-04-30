@@ -101,6 +101,8 @@ module Cfg = struct
     | Cfg.TupleExpr y -> y.reg
     | Cfg.CallExpr y -> y.reg
     | Cfg.BlockExpr y -> y.reg
+    | Cfg.LoadExpr y -> y.reg
+    | Cfg.RegExpr y -> y.reg
     | Cfg.IdExpr y -> y.reg
     | Cfg.IntExpr y -> y.reg
     | Cfg.UnitExpr y -> y.reg
@@ -120,19 +122,28 @@ end
 
 (* *)
 module Qbe = struct
-  let nameOfReg (x : Qbe.regs) = x.name
+  let nameOfReg (x : Qbe.regs) =
+    Printf.sprintf "%s%d.%d"
+      (match x.kind with
+      | Qbe.AllocReg -> "a"
+      | Qbe.FieldReg -> "f"
+      | Qbe.LoadReg -> "l"
+      | Qbe.DataReg -> "d")
+      x.baseId x.nextId
+  ;;
 
   let regOfExpr x =
     match x with
-    | Qbe.AllocExpr y -> y.var.name
-    | Qbe.CallExpr y -> y.var.name
-    | Qbe.BinOpExpr y -> y.var.name
-    | Qbe.FieldExpr y -> y.var.name
-    | Qbe.IdValExpr y -> y.var.name
-    | Qbe.RegExpr y -> y.var.name
-    | Qbe.TermExpr y -> y.var.name
-    | Qbe.BlockExpr y -> y.var.name
-    | Qbe.StoreExpr y -> y.var.name
+    | Qbe.AllocExpr y -> nameOfReg y.var
+    | Qbe.CallExpr y -> nameOfReg y.var
+    | Qbe.BinOpExpr y -> nameOfReg y.var
+    | Qbe.FieldExpr y -> nameOfReg y.var
+    | Qbe.IdValExpr y -> nameOfReg y.var
+    | Qbe.RegExpr y -> nameOfReg y.var
+    | Qbe.TermExpr y -> nameOfReg y.var
+    | Qbe.BlockExpr y -> nameOfReg y.var
+    | Qbe.LoadExpr y -> nameOfReg y.var
+    | Qbe.StoreExpr y -> nameOfReg y.var
     | _ -> xTODO uPOS (Qbe.show_exprs x)
   ;;
 

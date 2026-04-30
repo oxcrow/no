@@ -27,6 +27,8 @@ let rsid () = exprId := 0
 
 (* Utils *)
 let isFunction x = match x with Ast.Function _ -> true | _ -> false
+let isBefore x = match x with Cfg.Before _ -> true | _ -> false
+let isAfter x = match x with Cfg.After _ -> true | _ -> false
 
 (** Lower a function's AST to QBE IR instructions *)
 let rec lowerFunction file env entity =
@@ -55,9 +57,9 @@ and lowerStmts env types stmts =
   let rec aux env types stmts acc =
     match stmts with
     | [] -> (env, List.rev acc)
-    | h :: t ->
-        let env, node = lowerStmt env types h in
-        aux env types t (node :: acc)
+    | stmtHead :: stmtTail ->
+        let env, node = lowerStmt env types stmtHead in
+        aux env types stmtTail (node :: acc)
   in
   aux env types stmts []
 
@@ -79,11 +81,13 @@ and lowerStmt env types stmt =
           let rec trackVariable (env : Env.env) names idx =
             match names with
             | [] -> env
-            | nh :: nt ->
+            | nameHead :: nameTail ->
                 let env =
-                  Env.addRecord env (Env.Reg { name = nh; reg = (exprRegCFG, idx) }) nh
+                  Env.addRecord env
+                    (Env.Reg { name = nameHead; reg = (exprRegCFG, idx) })
+                    nameHead
                 in
-                trackVariable env nt (idx + 1)
+                trackVariable env nameTail (idx + 1)
           in
           let env = trackVariable env varNames 0 in
 
@@ -104,7 +108,7 @@ and lowerStmt env types stmt =
             let rec createField types offsets sizes idx fieldAcc =
               match (types, offsets, sizes) with
               | [], [], [] -> List.rev fieldAcc
-              | th :: tt, oh :: ot, sh :: st ->
+              | typeHead :: typeTail, offsetHead :: offsetTail, sizeHead :: sizeTail ->
                   let field =
                     Cfg.LetStmt
                       {
@@ -113,15 +117,16 @@ and lowerStmt env types stmt =
                         expr =
                           Cfg.FieldExpr
                             {
-                              type' = th;
-                              offset = oh;
-                              size = sh;
-                              from = (Some Cfg.AllocReg, exprRegCFG, idx);
+                              type' = typeHead;
+                              offset = offsetHead;
+                              size = sizeHead;
+                              from = (Some Cfg.AllocReg, exprRegCFG, 0);
                             };
                         stmts = [];
                       }
                   in
-                  createField tt ot st (idx + 1) (Cfg.After field :: fieldAcc)
+                  createField typeTail offsetTail sizeTail (idx + 1)
+                    (Cfg.After field :: fieldAcc)
               | _ -> xNEVER uPOS "wut?"
             in
             createField (listOfType exprTypeCFG) offsets sizes 0 []
@@ -195,12 +200,23 @@ and lowerStmt env types stmt =
         let _, _, exprIdCFG = Get.Cfg.splitRegOfExpr exprCFG in
 
         let node =
-          Cfg.RetStmt
-            {
-              reg = Some (Some Cfg.LoadReg, exprRegCFG, exprIdCFG);
-              expr = Some exprCFG;
-              stmts = [];
-            }
+          match exprTypeAST with
+          | Ast.UnitType -> Cfg.RetStmt { reg = None; expr = None; stmts = [] }
+          | _ ->
+              Cfg.RetStmt
+                {
+                  reg =
+                    Some
+                      ( Some
+                          (match s.expr with
+                          | Ast.FloatVal _ | Ast.BoolVal _ -> xTODO uPOS "ret-expr"
+                          | Ast.IntVal _ -> Cfg.DataReg
+                          | _ -> Cfg.LoadReg),
+                        exprRegCFG,
+                        exprIdCFG );
+                  expr = Some exprCFG;
+                  stmts = [];
+                }
         in
         (env, node)
     | _ -> xTODO uPOS "lower-stmt"
@@ -254,7 +270,10 @@ and lowerExpr env types expr =
           let rec createField types offsets sizes exprRegs idx fieldAcc storeAcc =
             match (types, offsets, sizes, exprRegs) with
             | [], [], [], [] -> (List.rev fieldAcc, List.rev storeAcc)
-            | th :: tt, oh :: ot, sh :: st, eh :: et ->
+            | ( typeHead :: typeTail,
+                offsetHead :: offsetTail,
+                sizeHead :: sizeTail,
+                exprHead :: exprTail ) ->
                 let field =
                   Cfg.LetStmt
                     {
@@ -263,24 +282,24 @@ and lowerExpr env types expr =
                       expr =
                         Cfg.FieldExpr
                           {
-                            type' = th;
-                            offset = oh;
-                            size = sh;
+                            type' = typeHead;
+                            offset = offsetHead;
+                            size = sizeHead;
                             from = (Some Cfg.AllocReg, exprRegCFG, idx);
                           };
                       stmts = [];
                     }
                 in
                 let store =
-                  match th with
+                  match typeHead with
                   | Cfg.TupleType _ ->
                       Cfg.CmdStmt
                         {
                           expr =
                             Cfg.BlitExpr
                               {
-                                size = sh;
-                                from = (Some Cfg.DataReg, eh, 0);
+                                size = sizeHead;
+                                from = (Some Cfg.DataReg, exprHead, 0);
                                 dest = (Some Cfg.AllocReg, exprRegCFG, idx);
                                 stmts = [];
                               };
@@ -292,15 +311,15 @@ and lowerExpr env types expr =
                           expr =
                             Cfg.StoreExpr
                               {
-                                type' = th;
-                                from = (Some Cfg.DataReg, eh, 0);
+                                type' = typeHead;
+                                from = (Some Cfg.DataReg, exprHead, 0);
                                 dest = (Some Cfg.AllocReg, exprRegCFG, idx);
                                 stmts = [];
                               };
                           stmts = [];
                         }
                 in
-                createField tt ot st et (idx + 1)
+                createField typeTail offsetTail sizeTail exprTail (idx + 1)
                   (Cfg.Before field :: fieldAcc)
                   (Cfg.Before store :: storeAcc)
             | _ -> xNEVER uPOS "wut?"
@@ -319,36 +338,64 @@ and lowerExpr env types expr =
           | Env.Reg x -> x.reg
           | _ -> xNEVER uPOS "wut?"
         in
-        Cfg.IdExpr
+        Cfg.LoadExpr
           {
             reg = Some (Some Cfg.LoadReg, exprRegCFG, exprIdxCFG);
-            name = getAstName e.name;
+            name = Some (getAstName e.name);
+            type' = exprTypeCFG;
+            from = (Some Cfg.FieldReg, exprRegCFG, exprIdxCFG);
+            stmts = [];
+          }
+    | Ast.IntVal e ->
+        let exprRegCFG = nxid () in
+        Cfg.RegExpr
+          {
+            reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
             type' = exprTypeCFG;
             stmts =
               [
-                Cfg.Before
+                Before
                   (Cfg.LetStmt
                      {
-                       reg = Some (Some Cfg.LoadReg, exprRegCFG, exprIdxCFG);
-                       name = Some (getAstName e.name);
+                       reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
+                       name = None;
                        expr =
-                         Cfg.LoadExpr
+                         Cfg.IntExpr
                            {
-                             type' = exprTypeCFG;
-                             from = (Some Cfg.AllocReg, exprRegCFG, exprIdxCFG);
+                             reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
+                             value = e.value;
                              stmts = [];
                            };
                        stmts = [];
                      });
               ];
           }
-    | Ast.IntVal e ->
-        let exprRegCFG = nxid () in
-        Cfg.IntExpr
-          { reg = Some (Some Cfg.DataReg, exprRegCFG, 0); value = e.value; stmts = [] }
     | Ast.UnitVal _ ->
         let exprRegCFG = nxid () in
-        Cfg.UnitExpr { reg = Some (Some Cfg.DataReg, exprRegCFG, 0); stmts = [] }
+        Cfg.LoadExpr
+          {
+            reg = Some (Some Cfg.LoadReg, exprRegCFG, 0);
+            name = None;
+            type' = Cfg.IntType;
+            from = (Some Cfg.DataReg, exprRegCFG, 0);
+            stmts =
+              [
+                Before
+                  (Cfg.LetStmt
+                     {
+                       reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
+                       name = None;
+                       expr =
+                         Cfg.UnitExpr
+                           {
+                             reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
+                             value = "0";
+                             stmts = [];
+                           };
+                       stmts = [];
+                     });
+              ];
+          }
     | _ -> xTODO uPOS ("lower-expr" ^ Ast.show_exprs expr)
   in
   (cxid (), exprCFG)
@@ -362,17 +409,17 @@ and sizeOfType type' =
       let rec calcStructSize types offset acc =
         match types with
         | [] -> acc
-        | h :: t ->
-            let align = alignOfType h in
-            let size = sizeOfType h in
+        | typeHead :: typeTail ->
+            let align = alignOfType typeHead in
+            let size = sizeOfType typeHead in
             let newOffset =
-              match h with
+              match typeHead with
               | Ast.UnitType | _ -> (
                   match offset mod align = 0 with
                   | true -> offset
                   | false -> offset + align - (offset mod align))
             in
-            calcStructSize t (newOffset + size) (acc + (newOffset - offset) + size)
+            calcStructSize typeTail (newOffset + size) (acc + (newOffset - offset) + size)
       in
       calcStructSize t.types 0 0
   | Ast.FunctionType t -> sizeOfType t.type'
@@ -399,17 +446,17 @@ and calcStructLayout type' =
   let rec aux types offset accOffset accSize =
     match types with
     | [] -> (List.rev accOffset, List.rev accSize)
-    | h :: t ->
-        let align = alignOfType h in
-        let size = sizeOfType h in
+    | typeHead :: typeTail ->
+        let align = alignOfType typeHead in
+        let size = sizeOfType typeHead in
         let newOffset =
-          match h with
+          match typeHead with
           | Ast.UnitType | _ -> (
               match offset mod align = 0 with
               | true -> offset
               | false -> offset + align - (offset mod align))
         in
-        aux t (newOffset + size) (newOffset :: accOffset) (size :: accSize)
+        aux typeTail (newOffset + size) (newOffset :: accOffset) (size :: accSize)
   in
   match type' with
   | Ast.TupleType t -> aux t.types 0 [] []
@@ -429,13 +476,7 @@ and lowerType type' =
   | Ast.TupleType t ->
       let offsets, sizes = calcStructLayout type' in
       let types = List.map lowerType t.types in
-      Cfg.TupleType
-        {
-          type' = types;
-          offsets =
-            List.map2 (fun o s -> match s with 0 -> None | _ -> Some o) offsets sizes;
-          sizes;
-        }
+      Cfg.TupleType { type' = types; offsets; sizes }
   | Ast.FloatType -> Cfg.FloatType
   | Ast.IntType -> Cfg.IntType
   | Ast.UnitType -> Cfg.UnitType
