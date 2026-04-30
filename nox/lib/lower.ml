@@ -192,11 +192,12 @@ and lowerStmt env types stmt =
         let exprTypeCFG = lowerType exprTypeAST in
 
         let exprRegCFG, exprCFG = lowerExpr env types s.expr in
+        let _, _, exprIdCFG = Get.Cfg.splitRegOfExpr exprCFG in
 
         let node =
           Cfg.RetStmt
             {
-              reg = Some (Some Cfg.DataReg, exprRegCFG, 0);
+              reg = Some (Some Cfg.LoadReg, exprRegCFG, exprIdCFG);
               expr = Some exprCFG;
               stmts = [];
             }
@@ -320,10 +321,26 @@ and lowerExpr env types expr =
         in
         Cfg.IdExpr
           {
-            reg = Some (Some Cfg.DataReg, exprRegCFG, exprIdxCFG);
+            reg = Some (Some Cfg.LoadReg, exprRegCFG, exprIdxCFG);
             name = getAstName e.name;
-            type' = lowerType (getAstTypeOfExpr types expr);
-            stmts = [];
+            type' = exprTypeCFG;
+            stmts =
+              [
+                Cfg.Before
+                  (Cfg.LetStmt
+                     {
+                       reg = Some (Some Cfg.LoadReg, exprRegCFG, exprIdxCFG);
+                       name = Some (getAstName e.name);
+                       expr =
+                         Cfg.LoadExpr
+                           {
+                             type' = exprTypeCFG;
+                             from = (Some Cfg.AllocReg, exprRegCFG, exprIdxCFG);
+                             stmts = [];
+                           };
+                       stmts = [];
+                     });
+              ];
           }
     | Ast.IntVal e ->
         let exprRegCFG = nxid () in
@@ -457,6 +474,5 @@ let lowerFile ast =
           (List.filter isFunction f.entities)
   in
   List.iter (fun d -> print_endline (Cfg.show_defs d)) defs;
-  exit 0;
   defs
 ;;

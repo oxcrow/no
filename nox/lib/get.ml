@@ -107,6 +107,14 @@ module Cfg = struct
     | _ -> xTODO uPOS "reg-of-expr"
   ;;
 
+  let splitRegOfExpr x =
+    match regOfExpr x with
+    | Some r ->
+        let regKind, regBase, regIdx = r in
+        (regKind, regBase, regIdx)
+    | None -> xNEVER uPOS "wut?"
+  ;;
+
   let stmtsOfBlock x = match x with Cfg.Block b -> b.stmts
 end
 

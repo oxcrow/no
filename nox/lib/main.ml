@@ -26,7 +26,7 @@ let what () =
     match Array.length Sys.argv < 2 with
     | true ->
         usage ();
-        failwith "Expected file to compile."
+        exit 0
     | false -> (
         let cmd = Sys.argv.(1) in
         match cmd with
@@ -70,7 +70,8 @@ let dbgAst ast = write (Ast.show_file ast)
 (** Compile a module and generate QBE/LLVM IR *)
 let compileModule rootFile =
   let rootAst = Parser.parseFileExt rootFile in
-  let mir = Lower.lowerFile rootAst in
+  let cfg = Lower.lowerFile rootAst in
+  let mir = Cower.cowerFile cfg in
   (* let qbe = Emit.emitQbe mir in *)
   (* dbgAst rootAst; *)
   (* Some (qbe, rootFile) *)
@@ -83,6 +84,7 @@ let pass file =
     try compileModule file with
     | Failure message ->
         write message;
+        exit 0;
         None
     | Core.Report report ->
         printf "%s"
@@ -92,11 +94,15 @@ let pass file =
         printf "%sThis error was raised from compiler source,\n" Fmt.ansiItalic;
         printf "(File: \"%s\", Line: %d)\n" report.source.file report.source.line;
         printf "(You may ignore this section)%s\n" Fmt.ansiReset;
+        exit 0;
         None
     | exn ->
         write (Printexc.to_string exn);
+        exit 0;
         None
   in
+  print_endline ("(please-finish-the-emitter-refactor)" ^ " (from (file: main.ml))");
+  exit 0;
   let qbe = String.trim (String.concat "" (result |> xSOME uPOS |> fst)) in
   let rootFile =
     result |> xSOME uPOS |> snd
