@@ -1,0 +1,30 @@
+BasedOnStyle: LLVM
+# Maximum line length. We set this to 0, as unrestricted code feels better.
+ColumnLimit: 0
+
+# Indentation style
+UseTab: AlignWithSpaces
+TabWidth: 4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+
+# Breaking style
+BreakBeforeBraces: Attach
+BreakBeforeBinaryOperators: NonAssignment
+
+# Packing style
+BinPackArguments: false
+BinPackParameters: true
+AllowAllArgumentsOnNextLine: false
+
+# Alignment style
+AlignOperands: DontAlign
+PointerAlignment: Middle
+AlignTrailingComments: true
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: None
+AlignEscapedNewlines: DontAlign
+AlignAfterOpenBracket: false
+
+# Short element style
+AllowShortFunctionsOnASingleLine: None

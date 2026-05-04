@@ -4,6 +4,7 @@
 # basic files and folders
 **/.zig-cache/**
 **/zig-out/**
+**/.cache/**
 **/_build/**
 **/build/**
 
