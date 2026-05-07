@@ -18,8 +18,8 @@ export fn main() int {
 		let y = fac(1);
 		:(x, y)
 	};
+	swap(mut&x, mut&y);
 	x, y = (y, x);
-	lib.swap(*x, *y);
 	:x
 }
 

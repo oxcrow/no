@@ -15,5 +15,14 @@
 *.bt
 *.s
 
+# files created by tools
+*.yy.c
+*.tab.c
+*.tab.h
+*.swp
+*.dat
+*.csv
+
 # executables
-nox/no
+no
+ng
