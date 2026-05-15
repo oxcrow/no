@@ -1,7 +1,8 @@
 package main
 
 import (
-	. "no/nox"
+	. "no/core"
+	. "no/parser"
 
 	"fmt"
 	"os"
@@ -49,4 +50,9 @@ func main() {
 		return
 	}
 
+	// Parse the root file for now
+	// Later analyze its dependencies, and parse them too
+	root := ParseFile(args.RootFilePath)
+
+	Ignore(root)
 }

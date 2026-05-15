@@ -1,4 +1,4 @@
-package nox
+package core
 
 const ANSI_RESET = "\033[0m"
 const ANSI_FAINT = "\033[2m"

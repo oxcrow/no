@@ -1,4 +1,4 @@
-package nox
+package core
 
 import (
 	"slices"
