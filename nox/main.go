@@ -1,6 +1,7 @@
 package main
 
 import (
+	. "no/analyse"
 	. "no/core"
 	. "no/parser"
 
@@ -49,10 +50,16 @@ func main() {
 		usage()
 		return
 	}
+	// If command mode is anything except build, then exit.
+	// TODO: Implement other command modes.
+	if args.CommandMode != ARGS_COMMAND_BUILD {
+		return
+	}
 
 	// Parse the root file for now
 	// Later analyze its dependencies, and parse them too
 	root := ParseFile(args.RootFilePath)
 
+	AnalyseAst(&root)
 	Ignore(root)
 }

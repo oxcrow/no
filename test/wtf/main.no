@@ -14,11 +14,10 @@ use lib;
 
 export fn main() int {
 	let mut x, mut y = {
-		let x = add(0, 0);
-		let y = fac(1);
-		:(x, y)
+		let a = add(0, 0);
+		let b = fac(1);
+		:(a, b)
 	};
-	swap(mut&x, mut&y);
 	x, y = (y, x);
 	:x
 }

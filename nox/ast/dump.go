@@ -59,6 +59,50 @@ func dumpStmt(s AnyStatement, level int) string {
 	return fmt.Sprintf("%s (%s (Line: %d))", pad, kind, line)
 }
 
+func DumpExprs(a Ast) {
+	Walk(&a, func(n Node) {
+		switch x := n.(type) {
+		case *BlockExpr:
+			fmt.Printf("%-20s At Line: %d\n", "BlockExpr", x.LineLoc())
+		case *TupleExpr:
+			fmt.Printf("%-20s At Line: %d\n", "TupleExpr", x.LineLoc())
+		case *InvokeExpr:
+			fmt.Printf("%-20s At Line: %d\n", "InvokeExpr", x.LineLoc())
+		case *NameExpr:
+			fmt.Printf("%-20s At Line: %d\n", "NameExpr", x.LineLoc())
+		case *IntExpr:
+			fmt.Printf("%-20s At Line: %d\n", "IntExpr", x.LineLoc())
+		case *UnitExpr:
+			fmt.Printf("%-20s At Line: %d\n", "UnitExpr", x.LineLoc())
+		case *BiopExpr:
+			switch x.Token.Kind {
+			case TOKEN_PLUS:
+				fmt.Printf("%-20s At Line: %d\n", "BiopExpr   (+)", x.LineLoc())
+			case TOKEN_MINUS:
+				fmt.Printf("%-20s At Line: %d\n", "BiopExpr   (-)", x.LineLoc())
+			case TOKEN_STAR:
+				fmt.Printf("%-20s At Line: %d\n", "BiopExpr   (*)", x.LineLoc())
+			case TOKEN_SLASH:
+				fmt.Printf("%-20s At Line: %d\n", "BiopExpr   (/)", x.LineLoc())
+			case TOKEN_DOT:
+				fmt.Printf("%-20s At Line: %d\n", "BiopExpr   (.)", x.LineLoc())
+			default:
+				fmt.Printf("%-20s At Line: %d\n", "BiopExpr   ( )", x.LineLoc())
+			}
+		case *UnopExpr:
+			switch x.Token.Kind {
+			case TOKEN_MUTAMPERSAND:
+				fmt.Printf("%-20s At Line: %d\n", "UnopExpr   (mut&)", x.LineLoc())
+			case TOKEN_AMPERSAND:
+				fmt.Printf("%-20s At Line: %d\n", "UnopExpr   (&)", x.LineLoc())
+			case TOKEN_QUESTION:
+				fmt.Printf("%-20s At Line: %d\n", "UnopExpr   (?)", x.LineLoc())
+			}
+		default:
+		}
+	})
+}
+
 func quote(s string) string {
 	return fmt.Sprintf("'%s'", s)
 }

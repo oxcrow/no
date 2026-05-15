@@ -55,12 +55,12 @@ func ParseArgs(args *Args, argv []string) {
 	}
 
 	if keyEmitEXE {
-		args.CommandMode = ARGS_EMIT_EXE
+		args.EmitMode = ARGS_EMIT_EXE
 	} else {
 		if keyEmitQBE {
-			args.CommandMode = ARGS_EMIT_QBE
+			args.EmitMode = ARGS_EMIT_QBE
 		} else if keyEmitASM {
-			args.CommandMode = ARGS_EMIT_ASM
+			args.EmitMode = ARGS_EMIT_ASM
 		} else {
 			panic("Unable to parse emmitter (qbe, asm) from command line arguments.")
 		}
@@ -76,7 +76,7 @@ func ParseArgs(args *Args, argv []string) {
 			}
 		}
 	}
-	if !rootFileFound {
+	if keyBuild && !rootFileFound {
 		panic("Unable to parse root file path from command line arguments.")
 	}
 

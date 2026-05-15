@@ -178,7 +178,7 @@ func parseEntityList(p *Parser) {
 				p.ast.Entities,
 				&Use{
 					Token: entityToken,
-					Name:  NameExpr{Token: nameToken, Value: nameToken.SpanText(p.text), Id: p.nextExprId()},
+					Name:  NameExpr{Token: nameToken, Value: nameToken.SpanText(p.text)},
 				},
 			)
 		default:
@@ -316,7 +316,7 @@ func parseVarList(p *Parser) []Variable {
 				Name:     NameExpr{Token: nameToken, Value: nameToken.SpanText(p.text)},
 				IsMut:    isMut,
 				IsShadow: isNew,
-				Type:     &typex,
+				Type:     typex,
 			},
 		)
 	}
@@ -339,7 +339,7 @@ func parseExpr(p *Parser, bindPower int) AnyExpression {
 			case TOKEN_RPAREN:
 				p.matchToken(TOKEN_RPAREN)
 				expr = &UnitExpr{
-					Token: lparenToken, Id: p.nextExprId(),
+					Token: lparenToken,
 				}
 			// Expr could be tuple or group; but not unit
 			default:
@@ -358,7 +358,7 @@ func parseExpr(p *Parser, bindPower int) AnyExpression {
 					}
 					p.matchToken(TOKEN_RPAREN)
 					expr = &TupleExpr{
-						Token: lparenToken, Exprs: tupleExprs, Id: p.nextExprId(),
+						Token: lparenToken, Exprs: tupleExprs,
 					}
 				} else {
 					// Is expr group?
@@ -391,7 +391,7 @@ outer:
 					}
 					p.matchToken(op)
 
-					lexpr = &UnopExpr{Token: opToken, LExpr: lexpr, Id: p.nextExprId()}
+					lexpr = &UnopExpr{Token: opToken, LExpr: lexpr}
 
 					continue outer
 				}
@@ -407,7 +407,7 @@ outer:
 					// Recurse until we find the highest precedence expression
 					rexpr := parseExpr(p, rbp)
 
-					lexpr = &BiopExpr{Token: opToken, LExpr: lexpr, RExpr: rexpr, Id: p.nextExprId()}
+					lexpr = &BiopExpr{Token: opToken, LExpr: lexpr, RExpr: rexpr}
 				}
 			}
 		default:
@@ -430,7 +430,6 @@ func parseCompExpr(p *Parser, bindPower int) AnyExpression {
 		expr = &BlockExpr{
 			Token: blockToken,
 			Block: stmts,
-			Id:    p.nextExprId(),
 		}
 	// Is expr an if-else block?
 	case TOKEN_IF:
@@ -454,9 +453,7 @@ func parseCompExpr(p *Parser, bindPower int) AnyExpression {
 						Check: elseIfExpr.(*IfExpr).Check,
 						Block: elseIfExpr.(*IfExpr).Block,
 						Rest:  elseIfExpr.(*IfExpr).Rest,
-						Id:    elseIfExpr.(*IfExpr).Id,
 					},
-					Id: p.nextExprId(),
 				}
 			default:
 				p.matchToken(TOKEN_LBRACE)
@@ -469,9 +466,7 @@ func parseCompExpr(p *Parser, bindPower int) AnyExpression {
 					Rest: &ElseExpr{
 						Token: elseToken,
 						Block: elseBlock,
-						Id:    p.nextExprId(),
 					},
-					Id: p.nextExprId(),
 				}
 			}
 		default:
@@ -483,7 +478,6 @@ func parseCompExpr(p *Parser, bindPower int) AnyExpression {
 		expr = &UnopExpr{
 			Token: opToken,
 			LExpr: parseExpr(p, 0),
-			Id:    p.nextExprId(),
 		}
 	// Is expr reference?
 	case TOKEN_AMPERSAND:
@@ -491,7 +485,6 @@ func parseCompExpr(p *Parser, bindPower int) AnyExpression {
 		expr = &UnopExpr{
 			Token: opToken,
 			LExpr: parseExpr(p, 0),
-			Id:    p.nextExprId(),
 		}
 	// Is expr an identifier, function, struct?
 	case TOKEN_XNAME:
@@ -507,7 +500,7 @@ func parseCompExpr(p *Parser, bindPower int) AnyExpression {
 			for p.kindIsExpr() {
 				argExpr := parseExpr(p, 0)
 				args = append(args, argExpr)
-				if p.kindIs(TOKEN_RPAREN) {
+				if p.kindIs(TOKEN_RPAREN) { // BUG: Does this make sense?
 					p.maybeToken(TOKEN_COMMA)
 					break
 				} else {
@@ -519,7 +512,6 @@ func parseCompExpr(p *Parser, bindPower int) AnyExpression {
 				Token: nameToken,
 				Name:  NameExpr{Token: nameToken, Value: nameToken.SpanText(p.text)},
 				Args:  args,
-				Id:    p.nextExprId(),
 			}
 		// Is expr struct?
 		case TOKEN_LBRACE:
@@ -530,14 +522,14 @@ func parseCompExpr(p *Parser, bindPower int) AnyExpression {
 		// Is expr an identifier?
 		default:
 			expr = &NameExpr{
-				Token: nameToken, Value: nameToken.SpanText(p.text), Id: p.nextExprId(),
+				Token: nameToken, Value: nameToken.SpanText(p.text),
 			}
 		}
 	// Is expr integer?
 	case TOKEN_XINT:
 		exprToken := p.matchToken(TOKEN_XINT)
 		value, _ := strconv.ParseUint(exprToken.SpanText(p.text), 10, 64)
-		expr = &IntExpr{Token: exprToken, Value: value, Id: p.nextExprId()}
+		expr = &IntExpr{Token: exprToken, Value: value}
 	default:
 		panic("(todo (parse-comp-expr))")
 	}
@@ -564,7 +556,7 @@ outer:
 					}
 					p.matchToken(op)
 
-					lexpr = &UnopExpr{Token: opToken, LExpr: lexpr, Id: p.nextExprId()}
+					lexpr = &UnopExpr{Token: opToken, LExpr: lexpr}
 
 					continue outer
 				}
@@ -580,7 +572,7 @@ outer:
 					// Recurse until we find the highest precedence expression
 					rexpr := parseExpr(p, rbp)
 
-					lexpr = &BiopExpr{Token: opToken, LExpr: lexpr, RExpr: rexpr, Id: p.nextExprId()}
+					lexpr = &BiopExpr{Token: opToken, LExpr: lexpr, RExpr: rexpr}
 				}
 			}
 		default:
@@ -601,7 +593,6 @@ func parseLvalCompExpr(p *Parser, bindPower int) AnyExpression {
 		expr = &UnopExpr{
 			Token: opToken,
 			LExpr: parseExpr(p, 0),
-			Id:    p.nextExprId(),
 		}
 	// Is expr constant reference?
 	case TOKEN_AMPERSAND:
@@ -609,7 +600,6 @@ func parseLvalCompExpr(p *Parser, bindPower int) AnyExpression {
 		expr = &UnopExpr{
 			Token: opToken,
 			LExpr: parseExpr(p, 0),
-			Id:    p.nextExprId(),
 		}
 	// Is expr an identifier, function, struct?
 	case TOKEN_XNAME:
@@ -635,7 +625,7 @@ func parseLvalCompExpr(p *Parser, bindPower int) AnyExpression {
 			p.matchToken(TOKEN_RPAREN)
 			expr = &InvokeExpr{
 				Token: nameToken,
-				Name:  NameExpr{Token: nameToken, Value: nameToken.SpanText(p.text), Id: p.nextExprId()},
+				Name:  NameExpr{Token: nameToken, Value: nameToken.SpanText(p.text)},
 				Args:  args,
 			}
 		// Is expr array?
@@ -644,7 +634,7 @@ func parseLvalCompExpr(p *Parser, bindPower int) AnyExpression {
 		// Is expr an identifier?
 		default:
 			expr = &NameExpr{
-				Token: nameToken, Value: nameToken.SpanText(p.text), Id: p.nextExprId(),
+				Token: nameToken, Value: nameToken.SpanText(p.text),
 			}
 		}
 	default:
@@ -722,6 +712,18 @@ func postfixBind(kind TokenKind) (int, error, bool) {
 		return 90, nil, true
 	}
 	return 0, nil, false
+}
+
+func ParseFileSafe(filePath string) (_ Ast, e error) {
+	defer func() {
+		if r := recover(); r != nil {
+			e = fmt.Errorf("Unable to parse code.")
+		}
+	}()
+
+	a := ParseFile(filePath)
+
+	return a, nil
 }
 
 func ParseFile(filePath string) Ast {

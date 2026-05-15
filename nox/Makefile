@@ -24,6 +24,15 @@ race:
 	@echo "# ~"
 	@echo -n "$$ "
 	go build -race -gcflags=all="-N -l"
+fast:
+	@echo "# Building in RELEASE mode. (Expect performance to be FAST!)"
+	@echo "# To optimize binary size and improve security,"
+	@echo "#   + Remove symbol table and debug information.(-s)"
+	@echo "#   + Remove DWARF debugging information.(-w)"
+	@echo "#   + Remove local file paths.(-trimpath)"
+	@echo "# ~"
+	@echo -n "$$ "
+	go build -ldflags="-s -w" -trimpath
 clean:
 	-go clean
 test: build
@@ -36,6 +45,7 @@ x:
 	-@$(NO) ../test/step/001A/pass/002C.no
 	-@$(NO) ../test/step/001A/pass/002D.no
 run:
+	@#go run . -- ../test/step/001A/pass/001A.no
 	@go run . -- ../test/wtf/main.no
 
 MAKEFLAGS += --no-print-directory
