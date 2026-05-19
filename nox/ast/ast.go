@@ -26,6 +26,9 @@ type Use struct {
 func (x *Function) LineLoc() int { return x.Token.Line + 1 }
 func (x *Use) LineLoc() int      { return x.Token.Line + 1 }
 
+func (x *Function) GetType() AnyType { return x.Type }
+func (x *Use) GetType() AnyType      { return x.Name.GetType() }
+
 func (x *Function) entityNode() {}
 func (x *Use) entityNode()      {}
 
@@ -91,8 +94,10 @@ type Variable struct {
 	Type     AnyType
 }
 
-func (x *Variable) LineLoc() int { return x.Token.Line + 1 }
-func (x *Variable) node()        {}
+func (x *Variable) LineLoc() int     { return x.Token.Line + 1 }
+func (x *Variable) GetType() AnyType { return x.Type }
+
+func (x *Variable) node() {}
 
 type BlockExpr struct {
 	Token Token
@@ -275,6 +280,7 @@ const (
 
 type AnyEntity interface {
 	Node
+	TypeNode
 	entityNode()
 }
 
@@ -286,13 +292,17 @@ type AnyStatement interface {
 
 type AnyExpression interface {
 	Node
-	GetType() AnyType
+	TypeNode
 	expressionNode()
 }
 
 type AnyType interface {
 	Node
 	typeNode()
+}
+
+type TypeNode interface {
+	GetType() AnyType
 }
 
 type Node interface {
