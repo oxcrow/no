@@ -25,15 +25,38 @@ typedef uint64_t u64;
 typedef float f32;
 typedef double f64;
 
+/// Allocation mode used
+enum AllocatorMode {
+    ALLOCATOR_MODE_GENERAL,
+    ALLOCATOR_MODE_ARENA,
+};
+
 /// Single threaded memory allocator
-/// We can allocate, resize, free memory, however from one thread.
+/// WARNING: THIS IS NOT INTENDED TO BE THREAD SAFE!
+/// To safely use this, allocate memory from master thread only.
+/// We can then safely use the allocated memory from any other thread.
 typedef struct Allocator {
+    /// Allocation mode
+    enum AllocatorMode mode;
+
+    // Methods to allocate, resize, free memory
     void * (*allocMethod)(usize, usize);
     void (*freeMethod)(void *);
-    usize numBytesAllocated;
+
+    /// Maximum number of bytes allowed to be allocated (to prevent Out of Memory)
+    usize maxNumAllowedBytes;
+
+    /// Number of bytes allocated by this allocator
+    usize numAllocatedBytes;
+
+    /// Number of allocated buffers that must be freed manually
+    usize numAllocatedBuffers;
+
+    /// Buffers that have been allocated, and must be freed manually
+    void ** allocatedBuffers;
 } Allocator;
 
-void allocatorInit(Allocator * mem);
+void allocatorInit(Allocator * mem, enum AllocatorMode mode, usize maxNumAllowedBytes);
 void allocatorDrop(Allocator * mem);
 //
 void * memoryAlloc(Allocator * mem, usize numElements, usize elemSize);

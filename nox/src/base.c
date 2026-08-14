@@ -2,23 +2,47 @@
 
 #include <string.h>
 
-void allocatorInit(Allocator * mem) {
+void allocatorInit(Allocator * mem, enum AllocatorMode mode, usize maxNumAllowedBytes) {
+    mem->mode = mode;
+
     mem->allocMethod = calloc;
     mem->freeMethod = free;
-    mem->numBytesAllocated = 0;
+
+    mem->maxNumAllowedBytes = maxNumAllowedBytes;
+    mem->numAllocatedBytes = 0;
+    mem->numAllocatedBuffers = 0;
+
+    mem->allocatedBuffers = calloc(4096, sizeof(void *));
 }
 
 void allocatorDrop(Allocator * mem) {
-    if (mem->numBytesAllocated != 0) {
-        // clean
+    // Clean all buffers that have been allocated
+    if (mem->numAllocatedBuffers != 0) {
+        for (usize i = 0; i < mem->numAllocatedBuffers; i++) {
+            free(mem->allocatedBuffers[i]);
+        }
     }
+    free(mem->allocatedBuffers);
 }
 
 void * memoryAlloc(Allocator * mem, usize numElements, usize elemSize) {
     void * memory = mem->allocMethod(numElements, elemSize);
     if (memory == NULL) {
-        dieAt("unable to allocate memory", XFILE, XLINE);
+        dieAt("Unable to allocate memory.", XFILE, XLINE);
     }
+
+    // Track allocated buffers
+    if (mem->mode == ALLOCATOR_MODE_GENERAL) {
+        mem->allocatedBuffers[mem->numAllocatedBuffers] = memory;
+        mem->numAllocatedBuffers++;
+    }
+
+    // Track allocated bytes
+    mem->numAllocatedBytes += numElements * elemSize;
+    if (mem->numAllocatedBytes > mem->maxNumAllowedBytes) {
+        dieAt("Unable to allocate more memory than allowed.", XFILE, XLINE);
+    }
+
     return memory;
 }
 

@@ -20,7 +20,7 @@ void usage(FILE * f) {
     fprintf(f, "%sBelieve in yourself.%s\n", ANSI_ITALIC, ANSI_RESET);
 }
 
-int main(int argc, char ** argv) {
+int dev(int argc, char ** argv) {
     struct Allocator mem;
     struct Argument arg;
     struct Status s;
@@ -35,5 +35,16 @@ int main(int argc, char ** argv) {
         }
     }
 
+    // Create an allocator to safely manage memory
+    allocatorInit(&mem, ALLOCATOR_MODE_GENERAL, 10e6);
+
+    // Cleanup
+    allocatorDrop(&mem);
+
+    return 0;
+}
+
+int main(int argc, char ** argv) {
+    dev(argc, argv);
     return 0;
 }
