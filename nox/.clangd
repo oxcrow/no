@@ -1,0 +1,3 @@
+# Never automatically insert headers. It's annoying as hecc!
+Completion:
+    HeaderInsertion: Never

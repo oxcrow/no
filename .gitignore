@@ -2,9 +2,7 @@
 .ignore.*
 
 # basic files and folders
-**/.zig-cache/**
-**/zig-out/**
-**/_build/**
+**/.cache/**
 **/build/**
 
 # files created during compilation
@@ -14,3 +12,10 @@
 *.bc
 *.bt
 *.s
+
+# Files created by text editors
+*.vim
+*.swp
+
+# scripts
+makefile
