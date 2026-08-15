@@ -3,6 +3,7 @@
 #include "base.h"
 //
 #include "argument.h"
+#include "file.h"
 
 void usage(FILE * f) {
     fprintf(f, "No - A language for workers of the world.\n");
@@ -41,6 +42,10 @@ int dev(int argc, char ** argv) {
     switch (arg.command) {
     case ARGUMENT_COMMAND_COMPILE: {
         const char * rootFilePath = argv[arg.compile.rootFileArgvIndex];
+        const char * rootCode = readFileText(&mem, rootFilePath, &s);
+        if (s.code) {
+            die(&s, "Unable to open and read code from root file.");
+        }
     } break;
     case ARGUMENT_COMMAND_RUN:
         break;
@@ -59,6 +64,5 @@ int dev(int argc, char ** argv) {
 }
 
 int main(int argc, char ** argv) {
-    dev(argc, argv);
-    return 0;
+    return dev(argc, argv);
 }
