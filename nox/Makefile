@@ -14,7 +14,7 @@ start:
 clean:
 	-rm build/* -rf
 run:
-	@$(NO)
+	@$(NO) compile ../test/step/001AA/main.no
 
 strip:
 	@echo "# Strip all symbols so the binary remains small."

@@ -38,6 +38,20 @@ int dev(int argc, char ** argv) {
     // Create an allocator to safely manage memory
     allocatorInit(&mem, ALLOCATOR_MODE_GENERAL, 10e6);
 
+    switch (arg.command) {
+    case ARGUMENT_COMMAND_COMPILE: {
+        const char * rootFilePath = argv[arg.compile.rootFileArgvIndex];
+    } break;
+    case ARGUMENT_COMMAND_RUN:
+        break;
+    case ARGUMENT_COMMAND_CLEAN:
+        break;
+    case ARGUMENT_COMMAND_HELP:
+        break;
+    default:
+        never("wut?");
+    }
+
     // Cleanup
     allocatorDrop(&mem);
 

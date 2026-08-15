@@ -10,7 +10,12 @@ struct Argument {
         ARGUMENT_COMMAND_HELP,
     } command;
 
-    usize argc;
+    struct {
+        /// Index of the root file path in argv array
+        u32 rootFileArgvIndex;
+    } compile;
+
+    u32 argc;
     char ** argv;
 };
 

@@ -24,8 +24,24 @@ void parseCmdlineArgs(struct Argument * arg, int argc, char ** argv, Status * s)
 
     // Parse rest of the options required to run the expected commands
     switch (arg->command) {
-    case ARGUMENT_COMMAND_COMPILE:
-        break;
+    case ARGUMENT_COMMAND_COMPILE: {
+        // Initialize to garbage values
+        arg->compile.rootFileArgvIndex = 0;
+
+        // Find root file path
+        for (usize i = 2; i < (usize)argc; i++) {
+            const char c = argv[i][0];
+            if (c != '-') {
+                arg->compile.rootFileArgvIndex = i;
+                break;
+            }
+        }
+
+        if (arg->compile.rootFileArgvIndex == 0) {
+            duck(s, "Unable to parse root file path from command line arguments.");
+            return;
+        }
+    } break;
     case ARGUMENT_COMMAND_RUN:
         break;
     case ARGUMENT_COMMAND_CLEAN:
