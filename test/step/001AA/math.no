@@ -1,0 +1,18 @@
+fn min($T $Order+Copy, a T, b T) T {
+    :if a < b { :a } else { :b }
+}
+
+fn max($T $Order+Copy, a T, b T) T {
+    :if a > b { :a } else { :b }
+}
+
+fn add($T $Add+Copy, $a T, $b T) T {
+    :a + b
+}
+
+fn div($T $Div+Copy+Zero, $a T, $b T) ?T {
+    :match b.isZero() {
+    | true -> None,
+    | false -> Some(a/b),
+    }
+}

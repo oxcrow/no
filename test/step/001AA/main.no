@@ -1,0 +1,24 @@
+mod math.{add, div} as m;
+
+fn main() int {
+    let (a, b) = {
+        let x = m.min(int, 0, div(int, 0, 1)?);
+        let y = m.max(int, x, add(int, x, 1));
+        let z = match @isSameType(@typeOf(x), int) {
+            | true -> 1, | false -> 0
+        };
+        :(x/y, x/z)
+    };
+    :a * b
+}
+
+// Aim:
+//
+// 1. Parse the grammar correctly.
+// 2. Type check generic code (With Hindley-Milner inference (Algorithm W)).
+// 3. Compile time execute the match branch and assign the value 1 to variable z.
+//
+// We could technically execute and evaluate the entire function at once,
+// however for the sake of simplicity, let's not do that. Not right now!
+//
+// For now, let's focus on solving the basic things first.
