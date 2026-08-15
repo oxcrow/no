@@ -60,7 +60,12 @@ void dieAt(const char * message, const char * filePath, usize lineIndex) {
     fprintf(stderr, "%s%s%s  %s\n", ANSI_RED, RUNE_DOT_CHAR, ANSI_RESET, message);
     fprintf(stderr, "\n");
 
-    fprintf(stderr, "%s%s (%s%s:%lu%s)\n", RUNE_BEND_CHAR, RUNE_DASH_CHAR, ANSI_ITALIC, strstr(filePath, "nox/"), lineIndex, ANSI_RESET);
+    fprintf(
+        stderr, "%s%s (%s%s:%lu%s)\n",
+        RUNE_BEND_CHAR, RUNE_DASH_CHAR, ANSI_ITALIC,
+        strstr(filePath, "nox/"), lineIndex,
+        ANSI_RESET
+    );
 
     exit(EXIT_FAILURE);
 }

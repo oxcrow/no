@@ -17,26 +17,30 @@ IndentWidth: 4
 ContinuationIndentWidth: 4
 
 # Breaking style
-BreakBeforeBraces: Attach
-BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Attach # Attach braces to surrounding context. Don't break before braces.
+BreakBeforeBinaryOperators: NonAssignment # Break before operators that aren't assignments
 
 # Packing style
-BinPackArguments: false
-BinPackParameters: true
-AllowAllArgumentsOnNextLine: false
+# Allows us to pack multiple arguments on a single line.
+# This seems better than Rust's / Zig's nonsense style of one argument per line.
+BinPackArguments: true # Controls packing of arguments in function calls
+BinPackParameters: true # Controls packing of arguments in function definition/implementation
+AllowAllArgumentsOnNextLine: false # Break long function calls on multiple lines. Don't try to smush into one line.
 
 # Alignment style
-AlignOperands: DontAlign
-PointerAlignment: Middle
-AlignTrailingComments: true
-AlignConsecutiveMacros: true
-AlignConsecutiveAssignments: None
-AlignEscapedNewlines: DontAlign
-AlignAfterOpenBracket: false
+AlignOperands: DontAlign # Don't align operands. Instead use the indentation expected.
+PointerAlignment: Middle # Align pointers to middle, so it becomes easier to read them.
+AlignTrailingComments: true # Align trailing comments so it looks better.
+AlignConsecutiveMacros: true # Align consecutive macros so it becomes easier to edit them.
+AlignConsecutiveAssignments: None # Don't align assignments. Looks weird.
+AlignEscapedNewlines: DontAlign # Don't align escaped new lines. Looks weird.
+AlignAfterOpenBracket: BlockIndent # Break and push the closing bracket to the next line. Looks better.
 
 # Short element style
-AllowShortFunctionsOnASingleLine: None
+AllowShortFunctionsOnASingleLine: None # Break all functions into multiple lines. Looks better.
 
 Macros:
     # Keep the macro on the same line, and eat the trailing semicolon
+    # Useful for error handling like Rust's ? and keep it on one line.
+    # Such as, runCode(..., &status); then(EXIT_FAILURE, &status);
     - then(ERROR, STATUS)=/* */ do {} while(0)

@@ -157,7 +157,8 @@ void dieAt(const char * message, const char * filePath, usize lineIndex);
     dieAt( \
         (((STATUS) != NULL) ? (((Status *)(STATUS))->message) : (MESSAGE)), \
         (((STATUS) != NULL) ? (((Status *)(STATUS))->filePath) : (XFILE)), \
-        (((STATUS) != NULL) ? (((Status *)(STATUS))->lineIndex) : (XLINE)))
+        (((STATUS) != NULL) ? (((Status *)(STATUS))->lineIndex) : (XLINE)) \
+    )
 
 /// Kill process when we execute unreachable code
 #define never(MESSAGE) \
