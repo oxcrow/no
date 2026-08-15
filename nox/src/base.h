@@ -184,22 +184,36 @@ static inline usize indexAt(usize index, usize arrayLength, const char * filePat
 #endif
 
 /// Invoke function and return error if it fails
-/// Use as, `auto x = something(); then(error, status);`
+/// Use as, `auto x = something(); back(error, status);`
 /// 1. The {} around if branch prevents it from getting attached to an else
 /// 2. The while(0) eats up the trailing semicolon and prevents bugs
 /// 3. The status is a pointer as that's how it'll be passed to functions.
 /// 4. The [[unlikely]] ensures we don't slow down code execution in hot paths.
-#define then(ERROR, STATUS) \
+#define back(ERROR, STATUS) \
     { \
         if (unlikely((STATUS)->code)) { \
             return ERROR; \
         } \
     } \
-    while (0)
+    while (0) { \
+    }
+
+/// Kill process if status contains error code
+#define stopWhat(STATUS, MESSAGE) \
+    { \
+        if (unlikely((STATUS)->code)) { \
+            die((STATUS), (MESSAGE)); \
+        } \
+    } \
+    while (0) { \
+    }
+
+/// Kill process if status contains error code
+#define stop(STATUS) stopWhat((STATUS), "Stop.")
 
 /// C does not allow us to return void; as an expression. That is a problem!
-/// Thus, use this with `then` macro to return errors from void functions.
-/// Such as, `foo(x, y, z, &status); then(unit, &status);`
+/// Thus, use this with `back` macro to return errors from void functions.
+/// Such as, `foo(x, y, z, &status); back(unit, &status);`
 #define unit /* nothing */
 
 ////////////////////////////////////////////////////////////////////////////////

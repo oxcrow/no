@@ -30,10 +30,7 @@ int dev(int argc, char ** argv) {
     if (argc == 1) {
         usage(stderr);
     } else {
-        parseCmdlineArgs(&arg, argc, argv, &s);
-        if (s.code) {
-            die(&s, "Unable to parse command line arguments.");
-        }
+        parseCmdlineArgs(&arg, argc, argv, &s); stop(&s);
     }
 
     // Create an allocator to safely manage memory
@@ -42,10 +39,7 @@ int dev(int argc, char ** argv) {
     switch (arg.command) {
     case ARGUMENT_COMMAND_COMPILE: {
         const char * rootFilePath = argv[arg.compile.rootFileArgvIndex];
-        const char * rootCode = readFileText(&mem, rootFilePath, &s);
-        if (s.code) {
-            die(&s, "Unable to open and read code from root file.");
-        }
+        const char * rootCode = readFileText(&mem, rootFilePath, &s); stop(&s);
     } break;
     case ARGUMENT_COMMAND_RUN:
         break;

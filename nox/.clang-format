@@ -42,5 +42,7 @@ AllowShortFunctionsOnASingleLine: None # Break all functions into multiple lines
 Macros:
     # Keep the macro on the same line, and eat the trailing semicolon
     # Useful for error handling like Rust's ? and keep it on one line.
-    # Such as, runCode(..., &status); then(EXIT_FAILURE, &status);
-    - then(ERROR, STATUS)=/* */ do {} while(0)
+    # Such as, runCode(..., &status); back(EXIT_FAILURE, &status);
+    - back(ERROR, STATUS)=/* */ do {} while(0) {}
+    - stopWhat(STATUS, MESSAGE)=/* */ do {} while(0) {}
+    - stop(STATUS)=/* */ do {} while(0) {}
