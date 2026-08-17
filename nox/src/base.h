@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Common macros and types
@@ -24,6 +22,11 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 typedef float f32;
 typedef double f64;
+
+// Common tuple types
+typedef struct u32x2 {
+    u32 a, b;
+} u32x2;
 
 /// Allocation mode used
 enum AllocatorMode {

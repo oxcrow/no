@@ -1,5 +1,7 @@
 #include "file.h"
 
+#include <stdio.h>
+
 char * readFileText(Allocator * mem, const char * filePath, Status * s) {
     FILE * f = fopen(filePath, "r");
     if (f == NULL) {

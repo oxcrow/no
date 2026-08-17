@@ -3,6 +3,7 @@
 
 struct Argument {
     enum Command {
+        ARGUMENT_COMMAND_UNKNOWN,
         ARGUMENT_COMMAND_COMPILE,
         ARGUMENT_COMMAND_RUN,
         //

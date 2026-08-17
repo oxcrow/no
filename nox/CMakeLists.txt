@@ -46,11 +46,17 @@ endif()
 add_compile_options(-Wno-unused-parameter)
 add_compile_options(-Wno-unused-function)
 add_compile_options(-Wno-unused-variable)
+add_compile_options(-Wno-switch-enum)
+add_compile_options(-Wno-switch)
 
 # Optimizations
 add_compile_options(-fvisibility=hidden)    # Hide everything
 add_compile_options(-pipe)                  # Enable RAM storage
 
 # Compile the code
-file(GLOB_RECURSE SOURCES "src/*.c")
+file(GLOB_RECURSE SOURCES
+    "src/ast/*.c"
+    "src/parse/*.c"
+    "src/*.c"
+)
 add_executable(no ${SOURCES})
