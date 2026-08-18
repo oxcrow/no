@@ -15,7 +15,7 @@ char * readFileText(Allocator * mem, const char * filePath, Status * s) {
     fseek(f, 0, SEEK_SET);
 
     // Allocate memory for buffer (+1 for null terminator)
-    char * buffer = memoryAlloc(mem, fileSize + 1, sizeof(char));
+    char * buffer = memoryAlloc(mem, fileSize + 1, sizeof(char), 16);
 
     // Read contents of file and append the null terminator to its end
     const usize bytesRead = fread(buffer, 1, fileSize, f);

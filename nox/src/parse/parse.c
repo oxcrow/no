@@ -452,7 +452,7 @@ void parseFileStep(Allocator * mem, Parser * p, Status * s) {
     parseModList(mem, p, s); back(unit, s);
 }
 
-void parseFile(Allocator * mem, const char * filePath, const char * code, Status * s) {
+void * parseFile(Allocator * mem, const char * filePath, const char * code, Status * s) {
     Parser p = {
         .state = {
             .filePath = filePath,
@@ -463,9 +463,10 @@ void parseFile(Allocator * mem, const char * filePath, const char * code, Status
             .lineIndex = 0
         }
     };
+    lexNextToken(&p, s); back(NULL, s);
+    skipToken(&p, s); back(NULL, s);
 
-    lexNextToken(&p, s); back(unit, s);
-    skipToken(&p, s); back(unit, s);
+    parseFileStep(mem, &p, s); back(NULL, s);
 
-    parseFileStep(mem, &p, s); back(unit, s);
+    return NULL;
 }

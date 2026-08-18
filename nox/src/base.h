@@ -18,6 +18,7 @@
 
 // Common number types
 typedef size_t usize;
+typedef uintptr_t uptr;
 typedef uint32_t u32;
 typedef uint64_t u64;
 typedef float f32;
@@ -52,17 +53,29 @@ typedef struct Allocator {
     /// Number of bytes allocated by this allocator
     usize numAllocatedBytes;
 
-    /// Number of allocated buffers that must be freed manually
-    usize numAllocatedBuffers;
+    struct {
+        /// Number of allocated buffers that must be freed manually
+        usize numAllocatedBuffers;
 
-    /// Buffers that have been allocated, and must be freed manually
-    void ** allocatedBuffers;
+        /// Buffers that have been allocated, and must be freed manually
+        void ** allocatedBuffers;
+    } heap;
+
+    struct {
+        /// Head of arena allocated memory
+        void * head;
+
+        /// Offset of arena
+        usize offsetBytes;
+    } arena;
 } Allocator;
 
-void allocatorInit(Allocator * mem, enum AllocatorMode mode, usize maxNumAllowedBytes);
+void allocatorInitHeap(Allocator * mem, usize maxNumAllowedBytes);
+void allocatorInitArena(Allocator * mem, void * buffer, usize maxNumAllowedBytes);
+void allocatorResetArena(Allocator * mem);
 void allocatorDrop(Allocator * mem);
 //
-void * memoryAlloc(Allocator * mem, usize numElements, usize elemSize);
+void * memoryAlloc(Allocator * mem, usize numElements, usize elemSize, usize alignBytes);
 void memoryFree(Allocator * mem, void ** ptrToData);
 
 // Stretchy string header
@@ -149,6 +162,10 @@ enum SomeErrorCodes {
 #define RUNE_BEND_CHAR "╰"
 #define RUNE_SIDE_CHAR "│"
 #define RUNE_DASH_CHAR "─"
+
+// Debugging macros
+#define dbgInt(X) printf("(%s: %zu), ", #X, (usize)(X));
+#define dbgEnd()  printf("\n");
 
 // Error detection and reporting macros
 

@@ -24,4 +24,4 @@ typedef struct Parser {
     } state;
 } Parser;
 
-void parseFile(Allocator * mem, const char * filePath, const char * code, Status * s);
+void * parseFile(Allocator * mem, const char * filePath, const char * code, Status * s);
