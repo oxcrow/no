@@ -45,9 +45,9 @@ get:
 	sudo apt-get install musl musl-dev musl-tools --yes
 
 test:
-	@./build/dev/test
+	@./build/dev/unit
 run:
-	@$(NO) compile ../test/step/001AA/main.no
+	@$(NO) compile ../test/pain/001/AA/main.no
 
 MAKEFLAGS += --no-print-directory
 .PHONY: clean test run

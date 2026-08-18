@@ -13,9 +13,18 @@
 *.bt
 *.s
 
+# files created by tools
+*.yy.c
+*.tab.c
+*.tab.h
+
 # Files created by text editors
 *.vim
 *.swp
 
 # scripts
 makefile
+
+# exe
+main
+ng
