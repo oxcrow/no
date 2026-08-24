@@ -5,6 +5,7 @@
 #include <unistd.h>    // for fork()
 
 #include "testAllocator.h"
+#include "testHash.h"
 
 typedef void (*Function)();
 
@@ -46,6 +47,7 @@ int main(void) {
     const Function f[] = {
         passTestAllocator001AA,
         passTestAllocator002AA,
+        passTestHash001AA,
     };
 
     for (usize i = 0; i < sizeof(f) / sizeof(f[0]); i++) {

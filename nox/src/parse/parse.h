@@ -1,6 +1,7 @@
 #pragma once
 #include "../base.h"
 
+#include "../ast/node.h"
 #include "../ast/token.h"
 
 typedef struct Parser {
@@ -21,7 +22,11 @@ typedef struct Parser {
 
         /// Current and next token
         Token currToken, nextToken;
+
+        /// Current module and file
+        ModuleNode * mod;
+        FileNode * file;
     } state;
 } Parser;
 
-void * parseFile(Allocator * mem, const char * filePath, const char * code, Status * s);
+void parseFile(Allocator * mem, const char * filePath, const char * code, Status * s);

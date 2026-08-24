@@ -38,8 +38,6 @@ int dev(int argc, char ** argv) {
     allocatorInitHeap(&mem, 10e6);
 
     switch (arg.command) {
-    case ARGUMENT_COMMAND_UNKNOWN:
-        break;
     case ARGUMENT_COMMAND_COMPILE: {
         // Do we need a local arena for parsing AST?
         // Yes! Yes we do! Recursively parsing dependencies will be slow,
@@ -47,14 +45,14 @@ int dev(int argc, char ** argv) {
         // our code, we need short lived arenas for processing temporary
         // data, such as strings, lists, ast nodes, etc.
         struct Allocator arena;
-        allocatorInitArena(&arena, memoryAlloc(&mem, 1e6, sizeof(char), 16), 1e6);
+        allocatorInitArena(&arena, memoryAlloc(&mem, 5e6, sizeof(char), 16), 5e6);
 
         // Read root file's code
         const char * rootFilePath = argv[arg.compile.rootFileArgvIndex];
         const char * rootCode = readFileText(&mem, rootFilePath, &s); stop(&s);
 
         // Parse root file's code
-        void * rootAst = parseFile(&arena, rootFilePath, rootCode, &s); stop(&s);
+        parseFile(&arena, rootFilePath, rootCode, &s); stop(&s);
 
         allocatorDrop(&arena);
         break;

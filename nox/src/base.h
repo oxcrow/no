@@ -12,6 +12,14 @@
 #define XFILE __FILE__
 #define XLINE __LINE__
 
+// Managing raw memory with pointers can lead to heinous bugs.
+// We can not prevent them if we can not grep/search for them.
+// Thus, we should use this macros to mark risky operations.
+// Such as, ptrMath(buffer + N)
+// It's not much, but helps.
+#define ptrMath(X) X
+#define ptrCast(X) X
+
 // Branch predictor hints
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -19,15 +27,25 @@
 // Common number types
 typedef size_t usize;
 typedef uintptr_t uptr;
-typedef uint32_t u32;
 typedef uint64_t u64;
-typedef float f32;
+typedef uint32_t u32;
+typedef uint8_t u8;
 typedef double f64;
+typedef float f32;
 
 // Common tuple types
 typedef struct u32x2 {
-    u32 a, b;
+    u32 x[2];
 } u32x2;
+
+/// Universally unique identifier for nodes in AST.
+/// Useful for comparing nodes in O(1) time.
+typedef struct UUID {
+    u32 libraryId;
+    u32 moduleId;
+    u32 fileId;
+    u32 selfId;
+} UUID;
 
 /// Allocation mode used
 enum AllocatorMode {
@@ -164,8 +182,9 @@ enum SomeErrorCodes {
 #define RUNE_DASH_CHAR "─"
 
 // Debugging macros
-#define dbgInt(X) printf("(%s: %zu), ", #X, (usize)(X));
-#define dbgEnd()  printf("\n");
+#define dbgString(X) printf("(%s: %s), ", #X, (X));
+#define dbgInt(X)    printf("(%s: %zu), ", #X, (usize)(X));
+#define dbgEnd()     printf("\n");
 
 // Error detection and reporting macros
 
@@ -187,6 +206,15 @@ void dieAt(const char * message, const char * filePath, usize lineIndex);
 /// Kill process when we execute code that is yet to be implemented
 #define todo(MESSAGE) \
     dieAt((MESSAGE), (XFILE), (XLINE))
+
+#define ensure(CONDITION) \
+    { \
+        if (unlikely(!(CONDITION))) { \
+            dieAt("Unable to ensure constraint. (" #CONDITION ")", XFILE, XLINE); \
+        } \
+        while (0) { \
+        } \
+    }
 
 /// Verify index does not access out of bounds
 static inline usize indexAt(usize index, usize arrayLength, const char * filePath, usize lineIndex) {
@@ -239,6 +267,16 @@ static inline usize indexAt(usize index, usize arrayLength, const char * filePat
 ////////////////////////////////////////////////////////////////////////////////
 // Utilities and algorithms
 ////////////////////////////////////////////////////////////////////////////////
+
+/// Hash string to 32 bit integer
+static inline u32 fnv1a(const char * str, usize strLen) {
+    u32 hash = 0x811c9dc5; // FNV offset basis for 32-bit
+    for (usize i = 0; i < strLen; i++) {
+        hash ^= (u8)str[i]; // XOR with byte
+        hash *= 0x1000193;  // Multiply by FNV prime
+    }
+    return hash;
+}
 
 /// Length of a null-terminated string
 usize stringLength(const char * string, usize maxLength);

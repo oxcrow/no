@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "../src/base.h"
+#include "../../nox/src/base.h"
 
 static void passTestAllocator001AA(void) {
     struct Allocator mem;

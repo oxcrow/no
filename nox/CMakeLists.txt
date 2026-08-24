@@ -51,6 +51,7 @@ endif()
 # Disable annoying warnings
 add_compile_options(-Wno-unused-parameter)
 add_compile_options(-Wno-unused-function)
+add_compile_options(-Wno-unused-but-set-variable)
 add_compile_options(-Wno-unused-variable)
 add_compile_options(-Wno-switch-enum)
 add_compile_options(-Wno-switch)
@@ -73,5 +74,5 @@ add_executable(no "src/main.c")
 target_link_libraries(no PRIVATE nox)
 
 # Compile the unit test framework
-add_executable(test "test/main.c")
-target_link_libraries(test PRIVATE nox)
+add_executable(unit "../test/unit/main.c")
+target_link_libraries(unit PRIVATE nox)

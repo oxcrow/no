@@ -47,7 +47,9 @@ get:
 test:
 	@./build/dev/unit
 run:
-	@$(NO) compile ../test/pain/001/AA/main.no
+	@$(NO) compile ../test/step/001/AA/AA.no
+	@$(NO) compile ../test/step/001/AA/AB.no
+	@$(NO) compile ../test/step/001/AA/AC.no
 
 MAKEFLAGS += --no-print-directory
 .PHONY: clean test run
