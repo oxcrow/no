@@ -1,0 +1,30 @@
+;; Silence annoying warnings.
+;; + Use -21 to silence warnings for nonreturning methods
+;; + Use -23 to silence warnings for useless record with
+;; + Use -26-27 to silence unused variable warnings
+;; + Use -33 to silenece unused opened module warnings
+;; + Use -A to silence all warnings
+
+(env
+ (dev
+  (flags
+   (:standard -w -21 -w -23 -w -26-27 -w -33))))
+
+; (ocamllex
+;  (modules ExtLexer))
+
+; (menhir
+;  (modules ExtParser)
+;  (flags --lalr)
+;  (explain true))
+
+(library
+ (name no)
+ (libraries unix)
+ ;; --------------------------------------------
+ ;; Uncomment this to debug with pretty printers
+ ;; --------------------------------------------
+ ; (preprocess
+ ;  (pps ppx_deriving.show))
+ ;; --------------------------------------------
+ )

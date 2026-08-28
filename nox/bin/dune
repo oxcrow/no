@@ -1,0 +1,23 @@
+;; Statically build compiler executable in release mode
+
+;; WARNING: musl-libc must be used for portable static builds on Linux.
+;; Often this can only be solved by compiling under Alpine Linux.
+;; Otherwise, OCaml compiler will link to glibc.
+
+(env
+ (linux
+  (flags
+   (:standard -cclib -static))
+  (ocamlopt_flags
+   (:standard -O3 -unbox-closures)))
+ (apple
+  (ocamlopt_flags
+   (:standard -O3 -unbox-closures)))
+ (window
+  (ocamlopt_flags
+   (:standard -O3 -unbox-closures))))
+
+(executable
+ (public_name no)
+ (name main)
+ (libraries no))
