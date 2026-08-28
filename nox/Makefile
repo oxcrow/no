@@ -1,7 +1,7 @@
-NO=opam exec -- dune exec no
+NO=OPAMROOTISOK=1 opam exec -- dune exec no
 
 all:
-	opam exec -- dune build
+	@OPAMROOTISOK=1 opam exec -- dune build
 
 run:
 	@$(NO)

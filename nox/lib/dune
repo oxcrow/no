@@ -10,13 +10,13 @@
   (flags
    (:standard -w -21 -w -23 -w -26-27 -w -33))))
 
-; (ocamllex
-;  (modules ExtLexer))
+(ocamllex
+ (modules Lexer))
 
-; (menhir
-;  (modules ExtParser)
-;  (flags --lalr)
-;  (explain true))
+(menhir
+ (modules Parser)
+ (flags --lalr)
+ (explain true))
 
 (library
  (name no)
