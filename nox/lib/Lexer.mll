@@ -1,7 +1,7 @@
 let document = "///"[^'\n']*['\n']
 let comment = "//"[^'\n']*['\n']
 let newline = ['\n']
-let white = [' ''\t']
+let white = [' ']
 let digit = ['0'-'9']
 let integer = digit['0'-'9''_']*
 let float = digit+(['.']digit+)?
@@ -13,6 +13,7 @@ rule token = parse
     | comment               { Lexing.new_line lexbuf; token lexbuf }
     | newline               { Lexing.new_line lexbuf; token lexbuf }
     | white                 { token lexbuf }
+    | '\t'                  { raise (Failure ("Tabs are not allowed!")) }
 
     (* Terminals *)
     | integer as lexeme     { Parser.XINT(lexeme) }
@@ -28,15 +29,22 @@ rule token = parse
     | "float"               { Parser.FLOAT }
     | "fn"                  { Parser.FN }
     | "if"                  { Parser.IF }
+    | "int"                 { Parser.INT }
+    | "later"               { Parser.LATER }
     | "let"                 { Parser.LET }
     | "local"               { Parser.LOCAL }
     | "macro"               { Parser.MACRO }
     | "mod"                 { Parser.MOD }
     | "mut"                 { Parser.MUT }
+    | "never"               { Parser.NEVER }
+    | "none"                { Parser.NONE }
     | "not"                 { Parser.NOT }
+    | "ok"                  { Parser.OK }
     | "or"                  { Parser.OR }
     | "return"              { Parser.RETURN}
+    | "some"                { Parser.SOME }
     | "struct"              { Parser.STRUCT }
+    | "todo"                { Parser.TODO }
     | "true"                { Parser.TRUE }
     | "type"                { Parser.TRUE }
     | "undefined"           { Parser.UNDEFINED }
@@ -76,6 +84,7 @@ rule token = parse
     | "-"                   { Parser.MINUS }
     | "*"                   { Parser.STAR }
     | "/"                   { Parser.SLASH }
+    | "\\"                  { Parser.BACKSLASH }
     | "^"                   { Parser.CARET }
     | "|"                   { Parser.BAR }
 

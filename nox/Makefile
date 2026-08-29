@@ -4,7 +4,7 @@ all:
 	opam exec -- dune build
 
 run:
-	@$(NO)
+	@$(NO) compile ../test/pain/001/AA/AA.no
 
 clean:
 	opam exec -- dune clean
