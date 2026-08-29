@@ -21,4 +21,14 @@ let space = " "
 let caret = "\n"
 
 (* Message line formatters *)
+let errorLine message = ansiRed ^ whyChar ^ ansiReset ^ " " ^ message ^ ansiReset
 let italicLine message = ansiItalic ^ message ^ ansiReset
+let quote message = "'" ^ message ^ "'"
+
+(** Read the contents of file into a string. *)
+let readFileContent filename : string =
+  let fileChannel = open_in_bin filename in
+  let fileLength = in_channel_length fileChannel in
+  let content = really_input_string fileChannel fileLength in
+  content
+;;
