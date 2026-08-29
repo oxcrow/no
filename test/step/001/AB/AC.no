@@ -1,0 +1,7 @@
+export fn main() int {
+    let (a, b, (c, d, (e, f ()))) = (0, 1, (2, (), ((), ())));
+    let (x, [y, z], w (int,int)) = (0, [1, 2], (3, 4));
+    let [g, h] [int,2] = [0, 1];
+    let i, j = (&a, (&b).*);
+    :x
+}

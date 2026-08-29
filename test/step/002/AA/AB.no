@@ -1,0 +1,12 @@
+export fn main() int {
+    let mut a &int = later;
+
+    let u, v = (0, 1);          // u and v are allocated on stack
+    let n = &u;                 // u's life should not end here since this is an alias
+
+    a = &v;                     // v's life ends here since v is no longer needed
+    a = n;                      // u's and n's use ends here but not their life
+
+    :a.*                        // a can refer to {u} not {v}
+}
+

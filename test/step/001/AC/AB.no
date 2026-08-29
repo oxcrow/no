@@ -1,0 +1,10 @@
+export fn main() int {
+    let mut x int = later;
+    if (true) {
+        x = 0;
+    } else {
+        x = 1;
+    }
+    :x
+}
+
