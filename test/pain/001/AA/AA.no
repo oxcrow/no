@@ -1,0 +1,43 @@
+mod AB;
+
+export fn main() int {
+    let mut a &int = later;
+    let v = toUnity();
+
+    if (v.sum().!.! >= 0) {
+        let u = 7;              // u will not live long enough, but can be used in local scope.
+        a = &u;                 // This is a dangerous assingment. Must be flagged by our code.
+        if (v.dif().! >= 0) {   // Safe, since both branches assign to a valid memory.
+            a = &v.x;           // Safe, since v.x lives long enough
+        } else {
+            a = &v.y;           // Safe, since v.y lives long enough
+        }                       // Since both branches overwrite a, we ignore a = &u
+    } else {
+        // Nothing              // Should be treated as an empty set.
+    }
+
+    :a.*                        // a can refer to {v.x, v.y} not {u}
+}
+
+fn toUnity() Vec2 {
+    let a = Vec2 {.x = 0, .y = 0};
+    let b = Vec2 {.x = 1, .y = 1};
+    :.{
+        .x = b.x-a.x,
+        .y = b.y-a.y,
+    }
+}
+
+struct Vec2 {
+    x int,
+    y int,
+
+    fn sum(self @Self) !?int {
+        :ok(some(addA(self.x, self.y)))
+    }
+
+    fn dif(self @Self) !int {
+        :ok(self.x - self.y)
+    }
+}
+

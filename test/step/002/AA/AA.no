@@ -1,0 +1,15 @@
+export fn main() int {
+    let mut a &int = later;
+    let v = 0;
+
+    if (v >= 0) {
+        let u = 7;              // u will not live long enough, but can be used in local scope.
+        a = &u;                 // This is a dangerous assingment. Must be flagged by our code.
+        a = &v;                 // Safe, since v lives long enough
+    } else {
+        // Nothing              // Should be treated as an empty set.
+    }
+
+    :a.*                        // a can refer to {v} not {u}
+}
+
