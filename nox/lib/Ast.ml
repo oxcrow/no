@@ -117,3 +117,9 @@ and names =
 (* Location *)
 and loc = (lox[@opaque])
 and lox = Location of { lineIndex : int; colIndex : int } | Nowhere
+
+module Get = struct
+  let stringOfName n = match n with Name n -> n.name | Nick n -> n.name
+  let stringOfModule m = match m with Mod m -> stringOfName m.name
+  let modulesOfFile f = match f with File f -> f.modules
+end

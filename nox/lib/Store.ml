@@ -3,6 +3,7 @@ open Core
 module Module = struct
   let stringTable : (string, int) Hashtbl.t = Hashtbl.create 4096
   let nextStringId = ref 0
+  let nextEntyId = ref 0
 
   (** Insert / intern string into table with a unique ID *)
   let internString string =
@@ -17,6 +18,7 @@ module Module = struct
 
   let reset () =
     Hashtbl.clear stringTable;
-    !nextStringId = 0
+    nextStringId := 0;
+    nextEntyId := 0
   ;;
 end
