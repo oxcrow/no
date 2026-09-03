@@ -2,6 +2,12 @@
     let nextStmtId = ref 0
     let nextExprId = ref 0
 
+    let entyId () =
+        let id = !Store.Module.nextEntyId in
+        Store.Module.nextEntyId := !Store.Module.nextEntyId + 1;
+        id
+    ;;
+
     let stmtId () =
         let id = !nextStmtId in
         nextStmtId := !nextStmtId + 1;
@@ -69,13 +75,13 @@ modules:
 
 entities:
     | s=scopes; STRUCT n=names; LBRACE m=seplist(COMMA,args); e=list(functions); RBRACE {
-        Ast.Struct {scope=s; name=n; elems=m; entys=e; loc=(loc $loc)}
+        Ast.Struct {scope=s; name=n; elems=m; entys=e; entyId=(entyId()); loc=(loc $loc)}
     }
     | f=functions; { f }
 
 functions:
     | s=scopes; FN n=names; LPAREN a=seplist(COMMA,args); RPAREN t=returnTypes; b=blocks; {
-        Ast.Function {scope=s; name=n; block=b; loc=(loc $loc)}
+        Ast.Function {scope=s; name=n; args=a; block=b; entyId=(entyId()); loc=(loc $loc)}
     }
 
 blocks:
@@ -284,7 +290,7 @@ returnTypes:
 types:
     | STRUCT LBRACE m=seplist(COMMA,args); RBRACE {
         Ast.StructType {
-            types = Ast.Struct {scope=Ast.ModuleScope; name=(Ast.Name{name=""; nameId=0; loc=(loc $loc)}); elems=m; entys=[]; loc=(loc $loc)};
+            types = Ast.Struct {scope=Ast.ModuleScope; name=(Ast.Name{name=""; nameId=0; loc=(loc $loc)}); elems=m; entys=[]; entyId=(entyId()); loc=(loc $loc)};
             offsets=[];
             align=0;
             size=0

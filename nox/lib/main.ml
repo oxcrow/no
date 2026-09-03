@@ -121,6 +121,36 @@ let main () =
   | "compile" | "c" ->
       (* Parse code from the root file *)
       let rootAst = parse filePath in
+
+      (* Parse all other files in the module *)
+      let modAsts =
+        let modNames = List.map Ast.Get.stringOfModule (Ast.Get.modulesOfFile rootAst) in
+
+        (* Verify that no duplicate exist in the module list *)
+        let rec hasDuplicateFiles fileNames =
+          match fileNames with
+          | [] | [ _ ] -> None
+          | fileNameHead :: fileNameTail ->
+              let found =
+                match List.find_opt (fun tailName -> fileNameHead = tailName) fileNameTail with
+                | Some n -> Some n
+                | None -> hasDuplicateFiles fileNameTail
+              in
+              found
+        in
+
+        (* Parse all files in module *)
+        match hasDuplicateFiles modNames with
+        | Some n -> die ("Unable to parse duplicate filename " ^ quote n ^ " in mod list!")
+        | None ->
+            List.map
+              (fun modName ->
+                let modPath = Filename.dirname filePath ^ "/" ^ modName ^ ".no" in
+                let modAst = parse modPath in
+                modAst)
+              modNames
+      in
+
       unit
   | _ -> failwith ("Unknown command: " ^ quote command));
   unit

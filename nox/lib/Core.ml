@@ -32,3 +32,9 @@ let readFileContent filename : string =
   let content = really_input_string fileChannel fileLength in
   content
 ;;
+
+(** Print error message and kill process *)
+let die message =
+  write message;
+  exit 0
+;;
