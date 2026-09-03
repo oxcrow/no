@@ -8,8 +8,22 @@ and modules = Mod of { name : names; loc : loc }
 
 (* Top level entities in each file *)
 and entities =
-  | Function of { scope : scopes; name : names; block : stmts list; loc : loc }
-  | Struct of { scope : scopes; name : names; elems : vars list; entys : entities list; loc : loc }
+  | Function of {
+      scope : scopes;
+      name : names;
+      args : vars list;
+      block : stmts list;
+      entyId : int;
+      loc : loc;
+    }
+  | Struct of {
+      scope : scopes;
+      name : names;
+      elems : vars list;
+      entys : entities list;
+      entyId : int;
+      loc : loc;
+    }
   | NoneEnty
 
 (* Statements *)

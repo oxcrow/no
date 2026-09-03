@@ -21,4 +21,16 @@ module Module = struct
     nextStringId := 0;
     nextEntyId := 0
   ;;
+
+  module SymbolMap = Map.Make (Int)
+
+  type record =
+    | FunctionRecord of {
+        name : string;
+        args : Ast.vars list;
+        types : Ast.types;
+        file : string;
+        loc : Ast.loc;
+      }
+    | StructRecord of { name : string; args : Ast.vars list; file : string; loc : Ast.loc }
 end
