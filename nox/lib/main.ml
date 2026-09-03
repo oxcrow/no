@@ -58,45 +58,15 @@ let what () =
 (* Parse file *)
 let parse filePath =
   let code = readFileContent filePath in
+
   (* Parse code using Menhir parser. Most of this is boilerplate code. No need to worry. *)
-  let posOfError (pos : Lexing.position) =
-    let lineIndex = pos.pos_lnum in
-    let colIndex = pos.pos_cnum - pos.pos_bol + 1 in
-    (lineIndex, colIndex)
-  in
-  let scream file lineIndex colIndex =
-    let lines = String.split_on_char '\n' (readFileContent file) in
-    let message lineIndex =
-      match lineIndex >= 1 && lineIndex < List.length lines with
-      | true -> (fmt "%4d │ " lineIndex, List.nth lines (lineIndex - 1))
-      | false -> (fmt "   ~ │", "")
-    in
-    let fmtA, lineA = message (lineIndex - 2) in
-    let fmtB, lineB = message (lineIndex - 1) in
-    let fmtC, lineC = message lineIndex in
-    let lineX =
-      let splitAt string i =
-        let n = String.length string in
-        match i < 0 || i > n with
-        | true -> ("", string)
-        | false ->
-            let left = String.sub string 0 i in
-            let right = String.sub string i (n - i) in
-            (left, right)
-      in
-      let left, right = splitAt lineC colIndex in
-      left ^ ansiRed ^ right ^ ansiReset
-    in
-    let fmtD, lineD = message (lineIndex + 1) in
-    let fmtE, lineE = message (lineIndex + 2) in
-    String.concat "\n" [ fmtA ^ lineA; fmtB ^ lineB; fmtC ^ lineX; fmtD ^ lineD; fmtE ^ lineE ]
-  in
   let buffer = Lexing.from_string code in
+
   let parsed =
     try Parser.file Lexer.token buffer with
     | Parser.Error state ->
-        let lineIndex, colIndex = posOfError buffer.lex_curr_p in
-        let message = scream filePath lineIndex colIndex in
+        let lineIndex, colIndex = Hecc.posOfError buffer.lex_curr_p in
+        let message = Hecc.scream filePath lineIndex colIndex in
         write (errorLine "Unable to parse code!");
         write message;
         exit 0
@@ -107,6 +77,7 @@ let parse filePath =
         write (Printexc.to_string exn);
         exit 0
   in
+
   (* Menhir parser doesn't know the root file's path,
    * but it's needed for debugging and analysis,
    * so we store it. *)
@@ -115,16 +86,16 @@ let parse filePath =
 ;;
 
 (* Compiler execution starts from here *)
-let main () =
+let dev () =
   let command, filePath = what () in
   (match command with
   | "compile" | "c" ->
       (* Parse code from the root file *)
       let rootAst = parse filePath in
 
-      (* Parse all other files in the module *)
+      (* Parse all other files in the module, include the root file too. *)
       let modAsts =
-        let modNames = List.map Ast.Get.stringOfModule (Ast.Get.modulesOfFile rootAst) in
+        let modNames = List.map Ast.getStringOfModule (Ast.getModulesOfFile rootAst) in
 
         (* Verify that no duplicate exist in the module list *)
         let rec hasDuplicateFiles fileNames =
@@ -140,18 +111,97 @@ let main () =
         in
 
         (* Parse all files in module *)
-        match hasDuplicateFiles modNames with
-        | Some n -> die ("Unable to parse duplicate filename " ^ quote n ^ " in mod list!")
-        | None ->
-            List.map
-              (fun modName ->
-                let modPath = Filename.dirname filePath ^ "/" ^ modName ^ ".no" in
-                let modAst = parse modPath in
-                modAst)
-              modNames
+        let modAsts =
+          match hasDuplicateFiles modNames with
+          | Some n -> die ("Unable to parse duplicate filename " ^ quote n ^ " in mod list!")
+          | None ->
+              List.map
+                (fun modName ->
+                  let modPath = Filename.dirname filePath ^ "/" ^ modName ^ ".no" in
+                  let modAst = parse modPath in
+                  modAst)
+                modNames
+        in
+
+        rootAst :: modAsts
       in
+
+      (* Create environment from all high level entities in each module *)
+      let env =
+        let rec envOfMod env mods =
+          match mods with
+          | [] -> env
+          | headMod :: tailMod ->
+              let envOfFile env file =
+                let fileName = Ast.getStringNameOfFile file in
+                let entys = Ast.getEntitiesOfFile file in
+
+                (* Recurse through all entities in the module, and insert them in env *)
+                let rec envOfEnty env entys =
+                  match entys with
+                  | [] -> env
+                  | headEnty :: tailEnty ->
+                      let nameId, record =
+                        match headEnty with
+                        | Ast.Function o ->
+                            let nameId = Store.Module.getIdOfName o.name in
+                            let name = Ast.getStringOfName o.name in
+                            ( nameId,
+                              Store.Module.FunctionRecord
+                                {
+                                  name;
+                                  nameId;
+                                  args = o.args;
+                                  types = o.types;
+                                  file = fileName;
+                                  loc = o.loc;
+                                } )
+                        | Ast.Struct o ->
+                            let nameId = Store.Module.getIdOfName o.name in
+                            let name = Ast.getStringOfName o.name in
+                            ( nameId,
+                              Store.Module.StructRecord
+                                {
+                                  name;
+                                  nameId;
+                                  elems = o.elems;
+                                  file = fileName;
+                                  entys = [];
+                                  loc = o.loc;
+                                } )
+                        | _ -> never source "wut?"
+                      in
+
+                      let env = Store.Module.SymbolMap.add nameId record env in
+                      envOfEnty env tailEnty
+                in
+
+                let env = envOfEnty env entys in
+                env
+              in
+
+              let env = envOfFile env headMod in
+              envOfMod env tailMod
+        in
+        let env = envOfMod Store.Module.SymbolMap.empty modAsts in
+        env
+      in
+
+      (* Infer all types inside each file in the module *)
+      let modAsts = List.map (fun modFile -> Infer.inferFile env modFile) modAsts in
 
       unit
   | _ -> failwith ("Unknown command: " ^ quote command));
   unit
+;;
+
+let main () =
+  try dev () with
+  | Report report ->
+      let message = report.message in
+      let file = report.source.file in
+      let line = report.source.line in
+      write message;
+      write (italicLine (fmt "(File: %s, Line: %d)" file line))
+  | _ -> exit 0
 ;;

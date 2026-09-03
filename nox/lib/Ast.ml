@@ -8,8 +8,23 @@ and modules = Mod of { name : names; loc : loc }
 
 (* Top level entities in each file *)
 and entities =
-  | Function of { scope : scopes; name : names; block : stmts list; loc : loc }
-  | Struct of { scope : scopes; name : names; elems : vars list; entys : entities list; loc : loc }
+  | Function of {
+      scope : scopes;
+      name : names;
+      args : vars list;
+      block : stmts list;
+      types : types;
+      entyId : int;
+      loc : loc;
+    }
+  | Struct of {
+      scope : scopes;
+      name : names;
+      elems : vars list;
+      entys : entities list;
+      entyId : int;
+      loc : loc;
+    }
   | NoneEnty
 
 (* Statements *)
@@ -73,6 +88,7 @@ and exprs =
   | ElseExpr of { block : stmts list; types : types; exprId : int; loc : loc }
   | NameExpr of { value : names; types : types; exprId : int; loc : loc }
   | IntExpr of { value : string; types : types; exprId : int; loc : loc }
+  | UnitExpr of { types : types; exprId : int; loc : loc }
   | LaterExpr of { exprId : int; loc : loc }
   | NoneExpr
 
@@ -86,7 +102,7 @@ and pats =
   | LonePattern of { var : vars }
 
 (* Variables *)
-and vars = Var of { state : states; name : names; type' : types; varId : int }
+and vars = Var of { state : states; name : names; type' : types; uuid : uuids }
 
 (* Types of nodes *)
 and types =
@@ -110,16 +126,18 @@ and states = ConState | MutState | SetState
 and scopes = ExportScope | ModuleScope | LocalScope
 
 (* Names of identifiers *)
-and names =
-  | Name of { name : string; nameId : int; loc : loc }
-  | Nick of { name : string; nameId : int; loc : loc }
+and names = Name of { name : string; nameId : int; uuid : uuids; loc : loc }
+
+(* Unique identifiers for everything *)
+and uuids = { modId : int; entyId : int; varId : int; elemId : int }
 
 (* Location *)
 and loc = (lox[@opaque])
 and lox = Location of { lineIndex : int; colIndex : int } | Nowhere
 
-module Get = struct
-  let stringOfName n = match n with Name n -> n.name | Nick n -> n.name
-  let stringOfModule m = match m with Mod m -> stringOfName m.name
-  let modulesOfFile f = match f with File f -> f.modules
-end
+let getStringOfName n = match n with Name n -> n.name
+let getIdOfName n = match n with Name n -> n.nameId
+let getEntitiesOfFile f = match f with File f -> f.entities
+let getStringNameOfFile f = match f with File f -> f.file
+let getStringOfModule m = match m with Mod m -> getStringOfName m.name
+let getModulesOfFile f = match f with File f -> f.modules

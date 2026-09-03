@@ -1,6 +1,7 @@
 %{
     let nextStmtId = ref 0
     let nextExprId = ref 0
+    let nextVarId = ref 0
 
     let entyId () =
         let id = !Store.Module.nextEntyId in
@@ -18,6 +19,28 @@
         let id = !nextExprId in
         nextExprId := !nextExprId + 1;
         id
+    ;;
+
+    let varId () =
+        let id = !nextVarId in
+        nextVarId := !nextVarId + 1;
+        id
+    ;;
+
+    let uuid () : Ast.uuids =
+        let modId = 0 in
+        let entyId = !Store.Module.nextEntyId - 1 in
+        let varId = varId () in
+        let elemId = 0 in
+        {modId; entyId; varId; elemId}
+    ;;
+
+    let nullUuid () : Ast.uuids =
+        let modId = 0 in
+        let entyId = !Store.Module.nextEntyId - 1 in
+        let varId = !nextVarId in
+        let elemId = 0 in
+        {modId; entyId; varId; elemId}
     ;;
 
     let location (x: Lexing.position) =
@@ -80,18 +103,22 @@ entities:
     | f=functions; { f }
 
 functions:
-    | s=scopes; FN n=names; LPAREN a=seplist(COMMA,args); RPAREN t=returnTypes; b=blocks; {
-        Ast.Function {scope=s; name=n; args=a; block=b; entyId=(entyId()); loc=(loc $loc)}
+    | s=scopes; FN n=names; LPAREN a=seplist(COMMA,args); RPAREN t=returnTypes; LBRACE stmts=list(stmts); e=option(endExprs) RBRACE {
+        let b = match e with
+            | Some e -> stmts @ [Ast.ReturnStmt{expr=e; stmtId=(stmtId()); loc=(loc $loc)}]
+            | None -> stmts @ [Ast.ReturnStmt {expr=(Ast.UnitExpr{types=Ast.UnitType; exprId=(exprId()); loc=(loc $loc)}); stmtId=(stmtId()); loc=(loc $loc)}]
+        in
+        Ast.Function {scope=s; name=n; args=a; block=b; types=t; entyId=(entyId()); loc=(loc $loc)}
     }
 
 blocks:
     | LBRACE s=list(stmts); e=option(endExprs) RBRACE {
-        (match e with Some e -> s @ [e] | None -> s)
+        (match e with Some e -> s @ [Ast.YieldStmt {expr=e; stmtId=(stmtId()); loc=(loc $loc)}] | None -> s)
     }
 
 endExprs:
     | COLON e=exprs; {
-        Ast.YieldStmt {expr=e; stmtId=(stmtId()); loc=(loc $loc)}
+        e
     }
 
 stmts:
@@ -118,6 +145,7 @@ exprs:
         Ast.OptionExpr {expr=Some(e); types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
     }
     | LPAREN e=exprs; RPAREN { e }
+    | LPAREN RPAREN { Ast.UnitExpr {types=Ast.UnitType; exprId=(exprId()); loc=(loc $loc)} }
     | e=biopExprs; { e }
     | e=condExprs; { e }
     | e=postExprs; { e }
@@ -275,12 +303,12 @@ pats:
 
 vars:
     | s=states; n=names; t=option(types); {
-        Ast.Var {state=s; name=n; type'=(match t with Some t -> t | None -> Ast.NoneType); varId=0}
+        Ast.Var {state=s; name=n; type'=(match t with Some t -> t | None -> Ast.NoneType); uuid=(uuid ())}
     }
 
 args:
     | n=names; t=types; {
-        Ast.Var {state=Ast.ConState; name=n; type'=t; varId=0}
+        Ast.Var {state=Ast.ConState; name=n; type'=t; uuid=(uuid ())}
     }
 
 returnTypes:
@@ -290,7 +318,7 @@ returnTypes:
 types:
     | STRUCT LBRACE m=seplist(COMMA,args); RBRACE {
         Ast.StructType {
-            types = Ast.Struct {scope=Ast.ModuleScope; name=(Ast.Name{name=""; nameId=0; loc=(loc $loc)}); elems=m; entys=[]; entyId=(entyId()); loc=(loc $loc)};
+            types = Ast.Struct {scope=Ast.ModuleScope; name=(Ast.Name{name=""; nameId=0; uuid=(nullUuid ()); loc=(loc $loc)}); elems=m; entys=[]; entyId=(entyId()); loc=(loc $loc)};
             offsets=[];
             align=0;
             size=0
@@ -327,11 +355,11 @@ scopes:
 names:
     | n=XNAME; {
         let id = Store.Module.internString n in
-        Ast.Name {name=n; nameId=id; loc=(loc $loc)}
+        Ast.Name {name=n; nameId=id; uuid=(nullUuid()); loc=(loc $loc)}
     }
     | AT n=XNAME; {
         let id = Store.Module.internString n in
-        Ast.Name {name=("@" ^ n); nameId=id; loc=(loc $loc)}
+        Ast.Name {name=("@" ^ n); nameId=id; uuid=(nullUuid()); loc=(loc $loc)}
     }
 
 septuple(SEP, NODE):
