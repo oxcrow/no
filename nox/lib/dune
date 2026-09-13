@@ -24,7 +24,7 @@
  ;; --------------------------------------------
  ;; Uncomment this to debug with pretty printers
  ;; --------------------------------------------
- ; (preprocess
- ;  (pps ppx_deriving.show))
+ (preprocess
+  (pps ppx_deriving.show))
  ;; --------------------------------------------
  )

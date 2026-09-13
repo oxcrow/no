@@ -8,6 +8,8 @@ run:
 	@$(NO) compile ../test/step/001/AA/AB.no
 	@$(NO) compile ../test/step/001/AA/AC.no
 	@$(NO) compile ../test/step/001/AB/AA.no
+	@$(NO) compile ../test/step/001/AB/AB.no
+	@$(NO) compile ../test/step/001/AB/AC.no
 	@#$(NO) compile ../test/step/002/AA/AA.no
 
 clean:

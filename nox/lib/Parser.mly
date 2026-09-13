@@ -252,11 +252,11 @@ groupExprs:
     | n=names; LPAREN a=seplist(COMMA,exprs); RPAREN {
         Ast.CallExpr {name=n; args=a; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
     }
+
+termExprs:
     | e=names; {
         Ast.NameExpr {value=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
     }
-
-termExprs:
     | e=XINT; {
         Ast.IntExpr {value=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
     }
@@ -291,11 +291,11 @@ elseBranch:
     | x=elseExprs; { x }
 
 pats:
-    | LPAREN p=nonempty_seplist(COMMA,pats); RPAREN {
-        Ast.TuplePattern {pats=p}
+    | LPAREN p=nonempty_seplist(COMMA,pats); RPAREN t=option(types); {
+        Ast.TuplePattern {pats=p; types=t}
     }
-    | LBRACK p=nonempty_seplist(COMMA,pats); RBRACK {
-        Ast.ArrayPattern {pats=p}
+    | LBRACK p=nonempty_seplist(COMMA,pats); RBRACK t=option(types); {
+        Ast.ArrayPattern {pats=p; types=t}
     }
     | v=vars; {
         Ast.LonePattern {var=v}
@@ -303,12 +303,12 @@ pats:
 
 vars:
     | s=states; n=names; t=option(types); {
-        Ast.Var {state=s; name=n; type'=(match t with Some t -> t | None -> Ast.NoneType); uuid=(uuid ())}
+        Ast.Var {state=s; name=n; type'=(match t with Some t -> t | None -> Ast.NoneType); uuid=(uuid ()); loc=(loc $loc)}
     }
 
 args:
     | n=names; t=types; {
-        Ast.Var {state=Ast.ConState; name=n; type'=t; uuid=(uuid ())}
+        Ast.Var {state=Ast.ConState; name=n; type'=t; uuid=(uuid ()); loc=(loc $loc)}
     }
 
 returnTypes:
@@ -323,6 +323,12 @@ types:
             align=0;
             size=0
         }
+    }
+    | LPAREN t=septuple(COMMA,types); RPAREN {
+        Ast.TupleType {types=t; offsets=[]; align=0; size=0}
+    }
+    | LBRACK t=types; COMMA n=termExprs; RBRACK {
+        Ast.ArrayType {types=t; elems=n;}
     }
     | EXCLAMATION t=types {
         Ast.ResultType {types=t; align=0; size=0}

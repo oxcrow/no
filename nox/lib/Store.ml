@@ -59,11 +59,15 @@ module Module = struct
   let printEnv env =
     SymbolMap.iter
       (fun key value ->
-        Printf.printf "%d -> %s\n" key
+        Printf.printf "%d -> %s -> %s\n" key
           (match value with
           | FunctionRecord f -> f.name
           | StructRecord s -> s.name
-          | VarRecord v -> v.name))
+          | VarRecord v -> v.name)
+          (match value with
+          | FunctionRecord f -> Ast.show_types f.types
+          | StructRecord s -> Ast.show_types Ast.UnitType
+          | VarRecord v -> Ast.show_types v.types))
       env
   ;;
 end

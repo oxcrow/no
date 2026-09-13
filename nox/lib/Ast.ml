@@ -97,16 +97,18 @@ and elems = Elem of { name : names; expr : exprs; loc : loc }
 
 (* Patterns *)
 and pats =
-  | TuplePattern of { pats : pats list }
-  | ArrayPattern of { pats : pats list }
+  | TuplePattern of { pats : pats list; types : types option }
+  | ArrayPattern of { pats : pats list; types : types option }
   | LonePattern of { var : vars }
+  | Vars of { vars : vars list }
 
 (* Variables *)
-and vars = Var of { state : states; name : names; type' : types; uuid : uuids }
+and vars = Var of { state : states; name : names; type' : types; uuid : uuids; loc : loc }
 
 (* Types of nodes *)
 and types =
   | TupleType of { types : types list; offsets : int list; align : int; size : int }
+  | ArrayType of { types : types; elems : exprs }
   | StructType of { types : entities; offsets : int list; align : int; size : int }
   | ResultType of { types : types; align : int; size : int }
   | OptionType of { types : types; align : int; size : int }
@@ -137,7 +139,25 @@ and lox = Location of { lineIndex : int; colIndex : int } | Nowhere
 
 let getStringOfName n = match n with Name n -> n.name
 let getIdOfName n = match n with Name n -> n.nameId
+
+(* *)
 let getEntitiesOfFile f = match f with File f -> f.entities
 let getStringNameOfFile f = match f with File f -> f.file
 let getStringOfModule m = match m with Mod m -> getStringOfName m.name
 let getModulesOfFile f = match f with File f -> f.modules
+
+(* *)
+let getNameOfVar v = match v with Var v -> v.name
+let getTypeOfVar v = match v with Var v -> v.type'
+let getUuidOfVar v = match v with Var v -> v.uuid
+let getLocOfVar v = match v with Var v -> v.loc
+
+let getTypeOfExpr e =
+  match e with
+  | TupleExpr e -> e.types
+  | ArrayExpr e -> e.types
+  | NameExpr e -> e.types
+  | IntExpr _ -> IntType
+  | UnitExpr _ -> UnitType
+  | _ -> todo source "get-type-of-expr"
+;;
