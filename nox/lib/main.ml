@@ -191,6 +191,10 @@ let dev () =
       (* Infer all types inside each file in the module *)
       let modAsts = List.map (fun modFile -> Infer.inferFile env modFile) modAsts in
 
+      (* Borrow check all files in the module *)
+      let modAsts = List.map (fun modFile -> Borrow.borrowFile env modFile) modAsts in
+
+      (* List.iter (fun m -> debug source (Ast.show_file m)) modAsts; *)
       unit
   | _ -> failwith ("Unknown command: " ^ quote command));
   unit

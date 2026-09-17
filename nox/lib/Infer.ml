@@ -174,6 +174,7 @@ and inferExprs env file exprs accExpr accTypes =
  * We don't know where the memory offsets will be, or their sizes, and alignments.
  * We NEED this for creating C like structs, that are aligned correctly in memory. *)
 and inferExpr env file expr =
+  let oldEnv = env in
   let inferBinaryExpr lexpr rexpr =
     let env, lowExprL, lowTypeL = inferExpr env file lexpr in
     let env, lowExprR, lowTypeR = inferExpr env file rexpr in
@@ -239,13 +240,13 @@ and inferExpr env file expr =
     | Ast.IfExpr o ->
         let env, lowCondExpr, lowCondType = inferExpr env file o.cond in
         let env, lowBlock = inferStmts env file o.block [] in
-        let env, lowRest, lowRestType =
+        let _, lowRest, lowRestType =
           match o.rest with
           | Some (Ast.ElseIfExpr e) ->
-              let env, lowRest, lowRestType = inferExpr env file (o.rest |> some source) in
+              let env, lowRest, lowRestType = inferExpr oldEnv file (o.rest |> some source) in
               (env, Some lowRest, lowRestType)
           | Some (Ast.ElseExpr e) ->
-              let env, lowRest, lowRestType = inferExpr env file (o.rest |> some source) in
+              let env, lowRest, lowRestType = inferExpr oldEnv file (o.rest |> some source) in
               (env, Some lowRest, lowRestType)
           | _ -> (env, None, Ast.NoneType)
         in
@@ -255,13 +256,13 @@ and inferExpr env file expr =
     | Ast.ElseIfExpr o ->
         let env, lowCondExpr, lowCondType = inferExpr env file o.cond in
         let env, lowBlock = inferStmts env file o.block [] in
-        let env, lowRest, lowRestType =
+        let _, lowRest, lowRestType =
           match o.rest with
           | Some (Ast.ElseIfExpr e) ->
-              let env, lowRest, lowRestType = inferExpr env file (o.rest |> some source) in
+              let env, lowRest, lowRestType = inferExpr oldEnv file (o.rest |> some source) in
               (env, Some lowRest, lowRestType)
           | Some (Ast.ElseExpr e) ->
-              let env, lowRest, lowRestType = inferExpr env file (o.rest |> some source) in
+              let env, lowRest, lowRestType = inferExpr oldEnv file (o.rest |> some source) in
               (env, Some lowRest, lowRestType)
           | _ -> (env, None, Ast.NoneType)
         in

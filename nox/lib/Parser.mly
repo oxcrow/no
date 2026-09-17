@@ -259,10 +259,10 @@ groupExprs:
 
 boolExprs:
     | TRUE {
-        Ast.BoolExpr{value=Ast.True; types=Ast.BoolType; exprId=(exprId()); loc=(loc $loc)}
+        Ast.BoolExpr{value=Ast.True; exprId=(exprId()); loc=(loc $loc)}
     }
     | FALSE {
-        Ast.BoolExpr{value=Ast.False; types=Ast.BoolType; exprId=(exprId()); loc=(loc $loc)}
+        Ast.BoolExpr{value=Ast.False; exprId=(exprId()); loc=(loc $loc)}
     }
 
 termExprs:

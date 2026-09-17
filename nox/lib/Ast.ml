@@ -87,7 +87,7 @@ and exprs =
     }
   | ElseExpr of { block : stmts list; types : types; exprId : int; loc : loc }
   | NameExpr of { value : names; types : types; exprId : int; loc : loc }
-  | BoolExpr of { value : bools; types : types; exprId : int; loc : loc }
+  | BoolExpr of { value : bools; exprId : int; loc : loc }
   | IntExpr of { value : string; types : types; exprId : int; loc : loc }
   | UnitExpr of { types : types; exprId : int; loc : loc }
   | LaterExpr of { exprId : int; loc : loc }
@@ -175,6 +175,7 @@ let rec getTypeOfExprOpt e =
   | ElseIfExpr e -> Some e.types
   | ElseExpr e -> Some e.types
   | NameExpr e -> Some e.types
+  | BoolExpr e -> Some BoolType
   | IntExpr _ -> Some IntType
   | UnitExpr _ -> Some UnitType
   | LaterExpr _ -> Some LaterType
@@ -194,4 +195,14 @@ let getLocOfExpr e =
   | IntExpr e -> e.loc
   | UnitExpr e -> e.loc
   | _ -> todo source "get-loc-of-expr"
+;;
+
+let getIdOfStmt s =
+  match s with
+  | LetStmt s -> s.stmtId
+  | ReturnStmt s -> s.stmtId
+  | YieldStmt s -> s.stmtId
+  | AssignStmt s -> s.stmtId
+  | CallStmt s -> s.stmtId
+  | IfStmt s -> s.stmtId
 ;;
