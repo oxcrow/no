@@ -15,7 +15,7 @@
 
 (menhir
  (modules Parser)
- (flags --lalr)
+ (flags --lalr --exn-carries-state)
  (explain true))
 
 (library
