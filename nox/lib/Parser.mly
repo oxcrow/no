@@ -38,7 +38,7 @@
     let nullUuid () : Ast.uuids =
         let modId = 0 in
         let entyId = !Store.Module.nextEntyId - 1 in
-        let varId = !nextVarId in
+        let varId = -1 in
         let elemId = 0 in
         {modId; entyId; varId; elemId}
     ;;
@@ -259,10 +259,10 @@ groupExprs:
 
 boolExprs:
     | TRUE {
-        Ast.BoolExpr{value=Ast.True; types=Ast.BoolType; exprId=(exprId()); loc=(loc $loc)}
+        Ast.BoolExpr{value=Ast.True; exprId=(exprId()); loc=(loc $loc)}
     }
     | FALSE {
-        Ast.BoolExpr{value=Ast.False; types=Ast.BoolType; exprId=(exprId()); loc=(loc $loc)}
+        Ast.BoolExpr{value=Ast.False; exprId=(exprId()); loc=(loc $loc)}
     }
 
 termExprs:

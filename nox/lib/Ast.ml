@@ -87,7 +87,7 @@ and exprs =
     }
   | ElseExpr of { block : stmts list; types : types; exprId : int; loc : loc }
   | NameExpr of { value : names; types : types; exprId : int; loc : loc }
-  | BoolExpr of { value : bools; types : types; exprId : int; loc : loc }
+  | BoolExpr of { value : bools; exprId : int; loc : loc }
   | IntExpr of { value : string; types : types; exprId : int; loc : loc }
   | UnitExpr of { types : types; exprId : int; loc : loc }
   | LaterExpr of { exprId : int; loc : loc }
@@ -150,6 +150,7 @@ and loc = (lox[@opaque])
 and lox = Location of { lineIndex : int; colIndex : int } | Nowhere
 
 let getStringOfName n = match n with Name n -> n.name
+let getVarIdOfName n = match n with Name n -> n.uuid.varId
 let getIdOfName n = match n with Name n -> n.nameId
 
 (* *)
@@ -175,6 +176,7 @@ let rec getTypeOfExprOpt e =
   | ElseIfExpr e -> Some e.types
   | ElseExpr e -> Some e.types
   | NameExpr e -> Some e.types
+  | BoolExpr e -> Some BoolType
   | IntExpr _ -> Some IntType
   | UnitExpr _ -> Some UnitType
   | LaterExpr _ -> Some LaterType
@@ -182,6 +184,19 @@ let rec getTypeOfExprOpt e =
 ;;
 
 let getTypeOfExpr e = getTypeOfExprOpt e |> some source
+
+let getIdOfExpr e =
+  match e with
+  | TupleExpr e -> e.exprId
+  | ArrayExpr e -> e.exprId
+  | DerefExpr e -> e.exprId
+  | ConRefExpr e -> e.exprId
+  | NameExpr e -> e.exprId
+  | BoolExpr e -> e.exprId
+  | IntExpr e -> e.exprId
+  | UnitExpr e -> e.exprId
+  | _ -> todo source "get-loc-of-expr"
+;;
 
 let getLocOfExpr e =
   match e with
@@ -194,4 +209,14 @@ let getLocOfExpr e =
   | IntExpr e -> e.loc
   | UnitExpr e -> e.loc
   | _ -> todo source "get-loc-of-expr"
+;;
+
+let getIdOfStmt s =
+  match s with
+  | LetStmt s -> s.stmtId
+  | ReturnStmt s -> s.stmtId
+  | YieldStmt s -> s.stmtId
+  | AssignStmt s -> s.stmtId
+  | CallStmt s -> s.stmtId
+  | IfStmt s -> s.stmtId
 ;;

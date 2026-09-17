@@ -103,6 +103,8 @@ let never (source : tSOURCE) (message : string) =
        })
 ;;
 
+let wut source = todo source "wut?"
+
 (* Assure that a condition is met, else execute a lambda, to do what the user wants. *)
 let assure (source : tSOURCE) (condition : bool) reporter = if condition then () else reporter ()
 

@@ -1,13 +1,18 @@
 export fn main() int {
     let mut a &int = later;
+    let mut b &int = later;
+    let mut c &int = later;
     let v = 0;
+    a = &v;                     // Safe, since v lives long enough
 
     if (v >= 0) {
         let u = 7;              // u will not live long enough, but can be used in local scope.
-        a = &u;                 // This is a dangerous assingment. Must be flagged by our code.
+        b = &u;                 // Safe, since b is not used anywhere later.
+        c = &u;                 // Safe, since c is not used anywhere later.
         a = &v;                 // Safe, since v lives long enough
+        a = &u;                 // BUG: This should crash!
     } else {
-        // Nothing              // Should be treated as an empty set.
+        c = &v;                 // Safe, since c is not used anywhere later.
     }
 
     :a.*                        // a can refer to {v} not {u}
