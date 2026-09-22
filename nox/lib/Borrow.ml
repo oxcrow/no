@@ -7,7 +7,7 @@ module LifeMap = Map.Make (Int)
 type loans =
   | AssignLoan of { loanVarId : int; stmtId : int; exprId : int; loc : Ast.loc }
   | UseLoan of { stmtId : int; exprId : int; loc : Ast.loc }
-  | BranchLoan of { loans : loans list; loc : Ast.loc }
+  | BranchLoan of { loans : loans list list; loc : Ast.loc }
 [@@deriving show { with_path = false }]
 
 type trees = { filePath : string; lifes : lifes LifeMap.t }
@@ -34,7 +34,7 @@ and printLoan name varId loan =
   match loan with
   | BranchLoan l ->
       write "///";
-      List.iter (fun loan -> printLoan name varId loan) l.loans
+      List.iter (fun loanList -> List.iter (fun loan -> printLoan name varId loan) loanList) l.loans
   | _ -> ()
 ;;
 
@@ -92,6 +92,58 @@ let addUseLoan tree name varId stmtId exprId loc =
 ;;
 
 (** Add elements from branches to the tree. *)
+let addBranchLoan tree (branches : trees list) =
+  let rec addBranch tree branches =
+    match branches with
+    | [] -> tree
+    | headBranch :: tailBranch ->
+        (* Insert each branch to the tree *)
+        let rec addVars tree varIds lifes =
+          match (varIds, lifes) with
+          | [], [] -> tree
+          | headVarId :: tailVarId, headLife :: tailLife ->
+              (* Insert each variable to the tree *)
+              let tree =
+                match LifeMap.find_opt headVarId tree.lifes with
+                | Some oldLife ->
+                    (* If this is an old variable, then collect its loans for use *)
+                    tree
+                | None ->
+                    (* If this is a new variable, then add it directly *)
+                    let tree = { tree with lifes = LifeMap.add headVarId headLife tree.lifes } in
+                    tree
+              in
+              addVars tree tailVarId tailLife
+          | _ -> never source "wut?"
+        in
+
+        let varIds, lifes = LifeMap.bindings headBranch.lifes |> List.split in
+        let tree = addVars tree varIds lifes in
+        addBranch tree tailBranch
+  in
+
+  let addLoans tree varIds lifes =
+    let rec aux tree varIds loans =
+      match (varIds, loans) with
+      | [], [] -> tree
+      | headVarId :: tailVarId, headLoan :: tailLoan ->
+          (* Insert the loans to each variable *)
+          aux tree tailVarId tailLoan
+      | _ -> never source "wut?"
+    in
+    let foundLifes = List.map2 (fun varId life -> LifeMap.find_opt varId life) varIds lifes in
+    let loans =
+      List.map (fun life -> match life with Some life -> life.loans | None -> []) foundLifes
+    in
+    let tree = aux tree varIds loans in
+    tree
+  in
+
+  let tree = addBranch tree branches in
+  tree
+;;
+
+(*
 let addBranchLoan tree branch loanId loc =
   let tree =
     let rec aux (tree : trees) (varIds : int list) (lifes : lifes list) =
@@ -153,6 +205,14 @@ let addBranchLoan tree branch loanId loc =
     tree
   in
   tree
+;;
+*)
+
+let lastStmtIdOfBlock block lastStmtId =
+  let lastStmtId =
+    match block with [] -> lastStmtId | _ -> Ast.getIdOfStmt (lastOfList block |> some source)
+  in
+  lastStmtId
 ;;
 
 let rec growEntities tree entys =
@@ -236,53 +296,50 @@ and growLvals tree lvals exprs stmtId lastStmtId =
 
   tree
 
-and growExpr tree expr stmtId lastStmtId =
-  let lastStmtIdOfBlock block =
-    let lastStmtId =
-      match block with [] -> lastStmtId | _ -> Ast.getIdOfStmt (lastOfList block |> some source)
-    in
-    lastStmtId
+and growIfElse tree expr stmtId lastStmtId =
+  let branches =
+    match expr with
+    | Ast.IfExpr o ->
+        let lastStmtId = lastStmtIdOfBlock o.block lastStmtId in
+        let mainBranch = growStmts (newBranch tree) o.block lastStmtId in
+        let restBranches =
+          match o.rest with
+          | Some (Ast.ElseIfExpr e) ->
+              growIfElse (newBranch tree) (o.rest |> some source) stmtId lastStmtId
+          | Some (Ast.ElseExpr e) ->
+              growIfElse (newBranch tree) (o.rest |> some source) stmtId lastStmtId
+          | _ -> []
+        in
+        [ mainBranch ] @ restBranches
+    | Ast.ElseIfExpr o ->
+        let lastStmtId = lastStmtIdOfBlock o.block lastStmtId in
+        let mainBranch = growStmts (newBranch tree) o.block lastStmtId in
+        let restBranches =
+          match o.rest with
+          | Some (Ast.ElseIfExpr e) ->
+              growIfElse (newBranch tree) (o.rest |> some source) stmtId lastStmtId
+          | Some (Ast.ElseExpr e) ->
+              growIfElse (newBranch tree) (o.rest |> some source) stmtId lastStmtId
+          | _ -> []
+        in
+        [ mainBranch ] @ restBranches
+    | Ast.ElseExpr o ->
+        let lastStmtId = lastStmtIdOfBlock o.block lastStmtId in
+        let mainBranch = growStmts (newBranch tree) o.block lastStmtId in
+        [ mainBranch ]
+    | _ -> never source "wut?"
   in
+  branches
+
+and growExpr tree expr stmtId lastStmtId =
   let tree =
     match expr with
     | Ast.IfExpr o ->
-        let lastStmtId = lastStmtIdOfBlock o.block in
-        let branch = growStmts (newBranch tree) o.block lastStmtId in
-        let restBranch, loanId =
-          match o.rest with
-          | Some (Ast.ElseIfExpr _) ->
-              (Some (growExpr (newBranch tree) (o.rest |> some source) stmtId lastStmtId), 102)
-          | Some (Ast.ElseExpr _) ->
-              (Some (growExpr (newBranch tree) (o.rest |> some source) stmtId lastStmtId), 103)
-          | _ -> (None, 0)
-        in
-        let tree =
-          match restBranch with
-          | Some rest -> addBranchLoan tree (addBranchLoan branch rest loanId o.loc) 101 o.loc
-          | None -> addBranchLoan tree branch 104 o.loc
-        in
+        let branches = growIfElse tree expr stmtId lastStmtId in
+        let tree = addBranchLoan tree branches in
         tree
-    | Ast.ElseIfExpr o ->
-        let lastStmtId = lastStmtIdOfBlock o.block in
-        let branch = growStmts (newBranch tree) o.block lastStmtId in
-        let restBranch, loanId =
-          match o.rest with
-          | Some (Ast.ElseIfExpr _) ->
-              (Some (growExpr (newBranch tree) (o.rest |> some source) stmtId lastStmtId), 202)
-          | Some (Ast.ElseExpr _) ->
-              (Some (growExpr (newBranch tree) (o.rest |> some source) stmtId lastStmtId), 203)
-          | _ -> (None, 0)
-        in
-        let tree =
-          match restBranch with
-          | Some rest -> addBranchLoan tree (addBranchLoan branch rest loanId o.loc) 201 o.loc
-          | None -> addBranchLoan tree branch 204 o.loc
-        in
-        tree
-    | Ast.ElseExpr o ->
-        let lastStmtId = lastStmtIdOfBlock o.block in
-        let branch = growStmts (newBranch tree) o.block lastStmtId in
-        branch
+    | Ast.ElseIfExpr o -> never source "wut?"
+    | Ast.ElseExpr o -> never source "wut?"
     | _ -> todo source "grow-expr"
   in
   tree
