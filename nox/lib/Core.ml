@@ -28,6 +28,15 @@ let write = print_endline
 let unit = ()
 let fmt = Printf.sprintf
 
+let writeInts list =
+  List.iter
+    (fun x ->
+      print_int x;
+      print_string " ")
+    list;
+  print_endline ""
+;;
+
 (* ANSI terminal characters *)
 let ansiItalic = "\x1b[3m"
 let ansiReset = "\x1b[0m"

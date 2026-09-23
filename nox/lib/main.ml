@@ -207,5 +207,7 @@ let main () =
       let line = report.source.line in
       write message;
       write (italicLine (fmt "(File: %s, Line: %d)" file line))
-  | _ -> exit 0
+  | _ ->
+      write "We messed up. Sorry.";
+      exit 0
 ;;

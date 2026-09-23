@@ -6,6 +6,7 @@ module LifeMap = Map.Make (Int)
 
 type loans =
   | AssignLoan of { loanVarId : int; stmtId : int; exprId : int; loc : Ast.loc }
+  | YieldLoan of { loanVarId : int; stmtId : int; exprId : int; loc : Ast.loc }
   | UseLoan of { stmtId : int; exprId : int; loc : Ast.loc }
   | BranchLoan of { loans : loans list list; loc : Ast.loc }
 [@@deriving show { with_path = false }]
@@ -16,25 +17,33 @@ and lifes = { name : string; varId : int; startIndex : int; endIndex : int; loan
 let rec printLifeMap (tree : trees) =
   LifeMap.iter
     (fun varId life ->
+      (* Print variable lifetime *)
       write
         (fmt "Variable %s, of id: %d, has %d loans, with life: [%d, %d]" (quote life.name) varId
            (List.length life.loans) life.startIndex life.endIndex);
+      (* Print variable loans *)
       List.iter (fun loan -> printLoan life.name varId loan) life.loans;
       write "")
     tree.lifes
 
 and printLoan name varId loan =
   write
-    (fmt "Variable %s, of id: %d, has loan: (%s)" (quote name) varId
+    (fmt "Variable %s, of id: %d, has: (%s Loan)" (quote name) varId
        (match loan with
        (* Should we print more info? *)
        | AssignLoan _ -> "Assign"
+       | YieldLoan _ -> "Yield"
        | UseLoan _ -> "Use"
        | BranchLoan _ -> "Branch"));
   match loan with
   | BranchLoan l ->
       write "///";
-      List.iter (fun loanList -> List.iter (fun loan -> printLoan name varId loan) loanList) l.loans
+      List.iter
+        (fun loanList ->
+          match List.length loanList with
+          | 0 -> write (fmt "Variable %s, of id: %d, has: (Empty Branch)" (quote name) varId)
+          | _ -> List.iter (fun loan -> printLoan name varId loan) loanList)
+        l.loans
   | _ -> ()
 ;;
 
@@ -93,9 +102,10 @@ let addUseLoan tree name varId stmtId exprId loc =
 
 (** Add elements from branches to the tree. *)
 let addBranchLoan tree (branches : trees list) =
-  let rec addBranch tree branches =
+  (* Add all new variables from each branch, to the tree *)
+  let rec addBranchVars tree branches varIdAcc =
     match branches with
-    | [] -> tree
+    | [] -> (tree, List.sort_uniq compare (List.flatten varIdAcc))
     | headBranch :: tailBranch ->
         (* Insert each branch to the tree *)
         let rec addVars tree varIds lifes =
@@ -119,94 +129,60 @@ let addBranchLoan tree (branches : trees list) =
 
         let varIds, lifes = LifeMap.bindings headBranch.lifes |> List.split in
         let tree = addVars tree varIds lifes in
-        addBranch tree tailBranch
+        addBranchVars tree tailBranch (varIds :: varIdAcc)
   in
 
-  let addLoans tree varIds lifes =
-    let rec aux tree varIds loans =
+  (* Add all loans for each variable assigned in each branch *)
+  let addLoans (tree : trees) (branches : trees list) (varIds : int list) =
+    let rec aux tree (loans : loans list list list) (varIds : int list) =
       match (varIds, loans) with
       | [], [] -> tree
       | headVarId :: tailVarId, headLoan :: tailLoan ->
           (* Insert the loans to each variable *)
-          aux tree tailVarId tailLoan
+          let loan = BranchLoan { loans = headLoan; loc = Ast.Nowhere } in
+          let tree =
+            {
+              tree with
+              lifes =
+                LifeMap.update headVarId
+                  (fun x ->
+                    match x with
+                    | Some oldLife -> Some { oldLife with loans = loan :: oldLife.loans }
+                    | None -> never source "wut?")
+                  tree.lifes;
+            }
+          in
+          aux tree tailLoan tailVarId
       | _ -> never source "wut?"
     in
-    let foundLifes = List.map2 (fun varId life -> LifeMap.find_opt varId life) varIds lifes in
-    let loans =
-      List.map (fun life -> match life with Some life -> life.loans | None -> []) foundLifes
+
+    (* Find loans for each variable from each branch *)
+    let rec getLoans (branches : trees list) (varIds : int list) accLoans =
+      match varIds with
+      | [] -> accLoans
+      | headVarId :: tailVarId ->
+          let loans =
+            List.map
+              (fun branch ->
+                let lifes = LifeMap.find_opt headVarId branch.lifes in
+                match lifes with Some life -> life.loans | None -> [])
+              branches
+          in
+          getLoans branches tailVarId (loans :: accLoans)
     in
-    let tree = aux tree varIds loans in
+
+    let tree = aux tree (getLoans branches varIds []) varIds in
     tree
   in
 
-  let tree = addBranch tree branches in
-  tree
-;;
-
-(*
-let addBranchLoan tree branch loanId loc =
-  let tree =
-    let rec aux (tree : trees) (varIds : int list) (lifes : lifes list) =
-      let tree =
-        match (varIds, lifes) with
-        | [], [] -> tree
-        | headVarId :: tailVarId, headLife :: tailLife ->
-            (* Find the elements in the tree, and add them if they don't exist*)
-            let tree =
-              match LifeMap.find_opt headVarId tree.lifes with
-              | Some oldVar ->
-                  (* If old variable exists in scope, we need to add branch. *)
-                  let loan = BranchLoan { loans = headLife.loans; loc } in
-                  let tree =
-                    {
-                      tree with
-                      lifes =
-                        LifeMap.update headVarId
-                          (fun x ->
-                            match x with
-                            | Some oldLife -> Some { oldLife with loans = loan :: oldLife.loans }
-                            | None ->
-                                (* If the variable doesn't exist in tree, then we messed up *)
-                                never source "wut?")
-                          tree.lifes;
-                    }
-                  in
-                  tree
-              | None ->
-                  (* If this is a new variable, then add it directly *)
-                  let loans =
-                    match headLife.loans with
-                    | [] -> []
-                    | _ -> [ BranchLoan { loans = headLife.loans; loc } ]
-                  in
-                  let tree = { tree with lifes = LifeMap.add headVarId headLife tree.lifes } in
-                  let tree =
-                    {
-                      tree with
-                      lifes =
-                        LifeMap.update headVarId
-                          (fun x ->
-                            match x with
-                            | Some newLife -> Some { newLife with loans }
-                            | None -> never source "wut?")
-                          tree.lifes;
-                    }
-                  in
-                  tree
-            in
-            aux tree tailVarId tailLife
-        | _ -> never source "wut?"
-      in
-      tree
-    in
-    (* Extract keys and values from the map as list, so we can recurse on them *)
-    let varIds, lifes = LifeMap.bindings branch.lifes |> List.split in
-    let tree = aux tree varIds lifes in
-    tree
+  let tree, varIds =
+    addBranchVars tree branches
+      (let varIds, _ = LifeMap.bindings tree.lifes |> List.split in
+       [ varIds ])
   in
+  let tree = addLoans tree branches varIds in
   tree
 ;;
-*)
 
 let lastStmtIdOfBlock block lastStmtId =
   let lastStmtId =
@@ -267,6 +243,7 @@ and growLvals tree lvals exprs stmtId lastStmtId =
     match (lvals, exprs) with
     | [], [] -> tree
     | headLval :: tailLval, headExpr :: tailExpr ->
+        (* WARNING: THIS WILL NOT WORK FOR ALIASES! WE NEED TO MATCH ON EXPRTYPE! *)
         let tree, exprs =
           match headExpr with
           (* If we find a complex expression, expand it *)

@@ -1,7 +1,7 @@
 let document = "///"[^'\n']*['\n']
 let comment = "//"[^'\n']*['\n']
 let newline = ['\n']
-let white = [' ']
+let white = [' ''\t']
 let digit = ['0'-'9']
 let integer = digit['0'-'9''_']*
 let float = digit+(['.']digit+)?
@@ -13,7 +13,6 @@ rule token = parse
     | comment               { Lexing.new_line lexbuf; token lexbuf }
     | newline               { Lexing.new_line lexbuf; token lexbuf }
     | white                 { token lexbuf }
-    | '\t'                  { raise (Failure ("Tabs are not allowed!")) }
     | "/*"                  { comment 1 lexbuf }
     | "*/"                  { failwith "Unable to terminate multi-line comment that doesn't exist." }
 

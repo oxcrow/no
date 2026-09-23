@@ -7,9 +7,11 @@ export fn main() int {
 
     if (v >= 0) {
         let u = 7;              // u will not live long enough, but can be used in local scope.
-        b = &u;                 // Safe, since b is not used anywhere later.
-        c = &u;                 // Safe, since c is not used anywhere later.
         a = &v;                 // Safe, since v lives long enough
+        if (v == 0) {
+            b = &u;             // Safe, since b is not used anywhere later.
+            c = &u;             // Safe, since c is not used anywhere later.
+        }                       // Else branch doesn't exist, so should be empty set.
         a = &u;                 // BUG: This should crash!
     } else {
         c = &v;                 // Safe, since c is not used anywhere later.
