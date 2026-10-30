@@ -13,6 +13,8 @@ rule token = parse
     | comment               { Lexing.new_line lexbuf; token lexbuf }
     | newline               { Lexing.new_line lexbuf; token lexbuf }
     | white                 { token lexbuf }
+    | "/*"                  { comment 1 lexbuf }
+    | "*/"                  { failwith "Unable to terminate multi-line comment that doesn't exist." }
 
     (* Terminals *)
     | integer as lexeme     { Parser.XINT(lexeme) }
@@ -28,6 +30,7 @@ rule token = parse
     | "float"               { Parser.FLOAT }
     | "fn"                  { Parser.FN }
     | "if"                  { Parser.IF }
+    | "int"                 { Parser.INT }
     | "let"                 { Parser.LET }
     | "local"               { Parser.LOCAL }
     | "macro"               { Parser.MACRO }
@@ -85,3 +88,10 @@ rule token = parse
     (* Catch'em all! *)
     | eof                   { Parser.EOF }
     | _                     { raise (Failure ("Unknown character: " ^ Lexing.lexeme lexbuf)) }
+
+and comment level = parse
+    | "/*"        { comment (level+1) lexbuf }
+    | "*/"        { if level = 1 then token lexbuf else comment (level-1) lexbuf }
+    | "\n"        { Lexing.new_line lexbuf; comment level lexbuf }
+    | eof         { failwith "Failed to terminate multi-line commment before end of file." }
+    | _           { comment level lexbuf }

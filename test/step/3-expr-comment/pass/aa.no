@@ -1,0 +1,4 @@
+/// A simple documentation comment
+export fn main() int {
+    return /* Nothing /* to see /* here */ */ */ 0; // A trailing comment
+}
