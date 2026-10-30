@@ -15,7 +15,7 @@
 
 (menhir
  (modules Parser)
- (flags --lalr)
+ (flags --lalr --exn-carries-state)
  (explain true))
 
 (library
@@ -24,7 +24,7 @@
  ;; --------------------------------------------
  ;; Uncomment this to debug with pretty printers
  ;; --------------------------------------------
- ; (preprocess
- ;  (pps ppx_deriving.show))
+ (preprocess
+  (pps ppx_deriving.show))
  ;; --------------------------------------------
  )

@@ -1,0 +1,7 @@
+export fn main() int {
+    :add(0, 0)
+}
+
+fn add(x int, y int) int {
+    :x+y
+}
