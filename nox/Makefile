@@ -19,6 +19,8 @@ run:
 	@$(NO) compile ../test/step/4-expr-binary/pass/aa.no
 	@$(NO) compile ../test/step/4-expr-binary/pass/ab.no
 	@$(NO) compile ../test/step/4-expr-binary/pass/ac.no
+	# 5-expr-if
+	@$(NO) compile ../test/step/5-expr-if/pass/aa.no
 
 clean:
 	opam exec -- dune clean

@@ -109,6 +109,11 @@ functions:
         Ast.Function {scope=s; name=n; args=[]; block=(Ast.Block{stmts=b; types=Ast.TodoType}); types=t; entyId=(entyId()); loc=(loc $loc)}
     }
 
+blocks:
+    | LBRACE s=blockStmts; RBRACE {
+        Ast.Block {stmts=s; types=Ast.TodoType}
+    }
+
 blockStmts:
     | s=list(stmts); e=option(endExprs) {
         (match e with Some e -> s @ [Ast.YieldStmt {expr=e; stmtId=(stmtId()); loc=(loc $loc)}] | None -> s)
@@ -127,7 +132,9 @@ stmts:
 exprs:
     | LPAREN e=exprs; RPAREN { e }
     | e=biopExprs; { e }
+    | e=condExprs; { e }
     | e=compExprs; { e }
+    | e=ifExprs; { e }
 
 biopExprs:
     | x=exprs; PLUS  y=exprs; %prec PLUS  {
@@ -141,6 +148,11 @@ biopExprs:
     }
     | x=exprs; SLASH y=exprs; %prec SLASH {
         Ast.DivExpr {lexpr=x; rexpr=y; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+
+condExprs:
+    | x=boolExprs; {
+        x
     }
 
 compExprs:
@@ -160,6 +172,35 @@ termExprs:
         Ast.UnitExpr {types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
     }
 
+ifStmts:
+    | IF c=condExprs; b=blocks; o=option(elseBranch); {
+        Ast.IfStmt {expr=Ast.IfExpr {cond=c; block=b; rest=o; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}; stmtId=(stmtId()); loc=(loc $loc)}
+    }
+ifExprs:
+    | IF c=condExprs; b=blocks; o=elseBranch; {
+        Ast.IfExpr {cond=c; block=b; rest=(Some o); types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+
+elseIfExprs:
+    | ELSE IF c=exprs; b=blocks; o=option(elseBranch); {
+        Ast.ElseIfExpr {cond=c; block=b; rest=o; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+elseExprs:
+    | ELSE b=blocks; {
+        Ast.ElseExpr {block=b; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+elseBranch:
+    | x=elseIfExprs; { x }
+    | x=elseExprs; { x }
+
+boolExprs:
+    | TRUE {
+        Ast.BoolExpr{value=Ast.True; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | FALSE {
+        Ast.BoolExpr{value=Ast.False; exprId=(exprId()); loc=(loc $loc)}
+    }
+
 returnTypes:
     | { Ast.UnitType }
     | t=types; { t }
@@ -171,7 +212,6 @@ types:
     | LPAREN RPAREN {
         Ast.UnitType
     }
-
 
 states:
     | MUT { Ast.MutState }

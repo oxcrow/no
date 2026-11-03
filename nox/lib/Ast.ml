@@ -26,21 +26,42 @@ and stmts =
   | ReturnStmt of { expr : exprs; stmtId : int; loc : loc }
   | YieldStmt of { expr : exprs; stmtId : int; loc : loc }
   | CallStmt of { expr : exprs; stmtId : int; loc : loc }
+  | IfStmt of { expr : exprs; stmtId : int; loc : loc }
 
 (* Exprssions *)
 and exprs =
   | BlockExpr of { block : blocks; types : types; exprId : int; loc : loc }
   | CallExpr of { name : names; args : exprs list; types : types; exprId : int; loc : loc }
+  | IfExpr of {
+      cond : exprs;
+      block : blocks;
+      rest : exprs option;
+      types : types;
+      exprId : int;
+      loc : loc;
+    }
+  | ElseIfExpr of {
+      cond : exprs;
+      block : blocks;
+      rest : exprs option;
+      types : types;
+      exprId : int;
+      loc : loc;
+    }
+  | ElseExpr of { block : blocks; types : types; exprId : int; loc : loc }
   | AddExpr of { lexpr : exprs; rexpr : exprs; types : types; exprId : int; loc : loc }
   | SubExpr of { lexpr : exprs; rexpr : exprs; types : types; exprId : int; loc : loc }
   | MulExpr of { lexpr : exprs; rexpr : exprs; types : types; exprId : int; loc : loc }
   | DivExpr of { lexpr : exprs; rexpr : exprs; types : types; exprId : int; loc : loc }
   | NameExpr of { value : names; types : types; exprId : int; loc : loc }
+  | BoolExpr of { value : bools; exprId : int; loc : loc }
   | IntExpr of { value : string; types : types; exprId : int; loc : loc }
   | UnitExpr of { types : types; exprId : int; loc : loc }
 
+and bools = True | False
+
 (* Types of nodes *)
-and types = IntType | UnitType | TodoType
+and types = BoolType | IntType | UnitType | TodoType
 
 (* States to control how variables mutate *)
 and states = ConState | MutState | SetState
@@ -65,11 +86,15 @@ let getTypeOfExpr e =
   match e with
   | BlockExpr e -> e.types
   | CallExpr e -> e.types
+  | IfExpr e -> e.types
+  | ElseIfExpr e -> e.types
+  | ElseExpr e -> e.types
   | AddExpr e -> e.types
   | SubExpr e -> e.types
   | MulExpr e -> e.types
   | DivExpr e -> e.types
   | NameExpr e -> e.types
+  | BoolExpr _ -> BoolType
   | IntExpr e -> e.types
   | UnitExpr e -> e.types
 ;;
@@ -78,11 +103,15 @@ let getLocOfExpr e =
   match e with
   | BlockExpr e -> e.loc
   | CallExpr e -> e.loc
+  | IfExpr e -> e.loc
+  | ElseIfExpr e -> e.loc
+  | ElseExpr e -> e.loc
   | AddExpr e -> e.loc
   | SubExpr e -> e.loc
   | MulExpr e -> e.loc
   | DivExpr e -> e.loc
   | NameExpr e -> e.loc
+  | BoolExpr e -> e.loc
   | IntExpr e -> e.loc
   | UnitExpr e -> e.loc
 ;;

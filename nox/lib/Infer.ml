@@ -78,6 +78,52 @@ and inferExpr env expr =
   in
   let env, lowExpr, lowType =
     match expr with
+    | Ast.IfExpr e ->
+        let env, lowCondExpr, lowCondType = inferExpr env e.cond in
+        let env, lowBlock, lowBlockType = inferBlock env e.block in
+        let _, lowRest, lowRestType =
+          match e.rest with
+          | Some (Ast.ElseIfExpr _) ->
+              let env, lowRest, lowRestType = inferExpr oldEnv (some source e.rest) in
+              if lowBlockType <> lowRestType then
+                never source "Else if branch's type does not match.";
+              (env, Some lowRest, lowRestType)
+          | Some (Ast.ElseExpr _) ->
+              let env, lowRest, lowRestType = inferExpr oldEnv (some source e.rest) in
+              if lowBlockType <> lowRestType then never source "Else branch's type does not match.";
+              (env, Some lowRest, lowRestType)
+          | _ -> (env, None, Ast.TodoType)
+        in
+        let newExpr =
+          Ast.IfExpr
+            { e with cond = lowCondExpr; block = lowBlock; rest = lowRest; types = lowBlockType }
+        in
+        (env, newExpr, lowBlockType)
+    | Ast.ElseIfExpr e ->
+        let env, lowCondExpr, lowCondType = inferExpr env e.cond in
+        let env, lowBlock, lowBlockType = inferBlock env e.block in
+        let _, lowRest, lowRestType =
+          match e.rest with
+          | Some (Ast.ElseIfExpr _) ->
+              let env, lowRest, lowRestType = inferExpr oldEnv (some source e.rest) in
+              if lowBlockType <> lowRestType then
+                never source "Else if branch's type does not match.";
+              (env, Some lowRest, lowRestType)
+          | Some (Ast.ElseExpr _) ->
+              let env, lowRest, lowRestType = inferExpr oldEnv (some source e.rest) in
+              if lowBlockType <> lowRestType then never source "Else branch's type does not match.";
+              (env, Some lowRest, lowRestType)
+          | _ -> (env, None, Ast.TodoType)
+        in
+        let newExpr =
+          Ast.ElseIfExpr
+            { e with cond = lowCondExpr; block = lowBlock; rest = lowRest; types = lowBlockType }
+        in
+        (env, newExpr, lowBlockType)
+    | Ast.ElseExpr e ->
+        let env, lowBlock, lowBlockType = inferBlock env e.block in
+        let newExpr = Ast.ElseExpr { e with block = lowBlock; types = lowBlockType } in
+        (env, newExpr, lowBlockType)
     | Ast.BlockExpr e ->
         let env, lowBlock, lowBlockType = inferBlock env e.block in
         (env, Ast.BlockExpr { e with block = lowBlock; types = lowBlockType }, lowBlockType)
@@ -93,6 +139,7 @@ and inferExpr env expr =
     | Ast.DivExpr e ->
         let env, lowExprL, lowExprR, lowType = inferBinaryExpr e.lexpr e.rexpr in
         (env, Ast.DivExpr { e with lexpr = lowExprL; rexpr = lowExprR; types = lowType }, lowType)
+    | Ast.BoolExpr e -> (env, expr, Ast.BoolType)
     | Ast.IntExpr e -> (env, Ast.IntExpr { e with types = Ast.IntType }, Ast.IntType)
     | Ast.UnitExpr _ -> (env, expr, Ast.UnitType)
     | _ -> todo source "infer-expr"

@@ -24,10 +24,15 @@ and stmts =
   | UDivStmt of { dest : regs; fromL : regs; fromR : regs }
   | CopyStmt of { dest : regs; value : string }
   | RetStmt of { from : regs option }
+  | PhiStmt of { dest : regs; from : phis list }
+  | JnzStmt of { condReg : regs; trueBlockId : int; falseBlockId : int }
+  | JmpStmt of { fromBlockId : int; toBlockId : int }
   | NoneStmt
 
+and phis = { blockId : int; from : regs }
+
 (* Types that we can convert to IR *)
-and types = IntType | UnitType
+and types = LongType | WordType | UnitType
 
 (* Scope of the exported element *)
 and scopes = ExportScope | ModuleScope
