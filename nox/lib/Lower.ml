@@ -32,6 +32,7 @@ and lowerEntity enty =
 and lowerBlockMap block blockIndex =
   let cfg = Store.BlockMap.empty in
   let cfg, lowYieldReg, blockIndex, accStmt = lowerBlock cfg block blockIndex [] in
+  dump cfg;
   cfg
 
 and lowerBlock cfg block blockIndex accStmt =
