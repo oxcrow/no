@@ -75,6 +75,67 @@ and lowerExpr cfg expr blockIndex accStmt =
     | Ast.BlockExpr e ->
         let cfg, lowYieldReg, blockIndex, accStmt = lowerBlock cfg e.block blockIndex accStmt in
         (cfg, lowYieldReg, blockIndex, accStmt)
+    | Ast.AddExpr e ->
+        let cfg, lowExprRegL, blockIndex, accStmt = lowerExpr cfg e.lexpr blockIndex accStmt in
+        let cfg, lowExprRegR, blockIndex, accStmt = lowerExpr cfg e.rexpr blockIndex accStmt in
+        let lowExprReg = newReg e.exprId 0 (lowerType e.types) in
+        let lowExpr =
+          Mir.AddStmt
+            {
+              dest = lowExprReg;
+              fromL = lowExprRegL |> some source;
+              fromR = lowExprRegR |> some source;
+            }
+        in
+        (cfg, Some lowExprReg, blockIndex, lowExpr :: accStmt)
+    | Ast.SubExpr e ->
+        let cfg, lowExprRegL, blockIndex, accStmt = lowerExpr cfg e.lexpr blockIndex accStmt in
+        let cfg, lowExprRegR, blockIndex, accStmt = lowerExpr cfg e.rexpr blockIndex accStmt in
+        let lowExprReg = newReg e.exprId 0 (lowerType e.types) in
+        let lowExpr =
+          Mir.SubStmt
+            {
+              dest = lowExprReg;
+              fromL = lowExprRegL |> some source;
+              fromR = lowExprRegR |> some source;
+            }
+        in
+        (cfg, Some lowExprReg, blockIndex, lowExpr :: accStmt)
+    | Ast.MulExpr e ->
+        let cfg, lowExprRegL, blockIndex, accStmt = lowerExpr cfg e.lexpr blockIndex accStmt in
+        let cfg, lowExprRegR, blockIndex, accStmt = lowerExpr cfg e.rexpr blockIndex accStmt in
+        let lowExprReg = newReg e.exprId 0 (lowerType e.types) in
+        let lowExpr =
+          Mir.MulStmt
+            {
+              dest = lowExprReg;
+              fromL = lowExprRegL |> some source;
+              fromR = lowExprRegR |> some source;
+            }
+        in
+        (cfg, Some lowExprReg, blockIndex, lowExpr :: accStmt)
+    | Ast.DivExpr e ->
+        let cfg, lowExprRegL, blockIndex, accStmt = lowerExpr cfg e.lexpr blockIndex accStmt in
+        let cfg, lowExprRegR, blockIndex, accStmt = lowerExpr cfg e.rexpr blockIndex accStmt in
+        let lowExprReg = newReg e.exprId 0 (lowerType e.types) in
+        let lowExpr =
+          match e.types with
+          | Ast.IntType ->
+              Mir.UDivStmt
+                {
+                  dest = lowExprReg;
+                  fromL = lowExprRegL |> some source;
+                  fromR = lowExprRegR |> some source;
+                }
+          | _ ->
+              Mir.DivStmt
+                {
+                  dest = lowExprReg;
+                  fromL = lowExprRegL |> some source;
+                  fromR = lowExprRegR |> some source;
+                }
+        in
+        (cfg, Some lowExprReg, blockIndex, lowExpr :: accStmt)
     | Ast.IntExpr e ->
         let lowExprReg = newReg e.exprId 0 (lowerType e.types) in
         let lowExpr = Mir.CopyStmt { dest = lowExprReg; value = e.value } in

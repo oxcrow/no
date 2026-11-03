@@ -125,7 +125,23 @@ stmts:
     }
 
 exprs:
+    | LPAREN e=exprs; RPAREN { e }
+    | e=biopExprs; { e }
     | e=compExprs; { e }
+
+biopExprs:
+    | x=exprs; PLUS  y=exprs; %prec PLUS  {
+        Ast.AddExpr {lexpr=x; rexpr=y; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | x=exprs; MINUS y=exprs; %prec MINUS {
+        Ast.SubExpr {lexpr=x; rexpr=y; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | x=exprs; STAR  y=exprs; %prec STAR  {
+        Ast.MulExpr {lexpr=x; rexpr=y; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | x=exprs; SLASH y=exprs; %prec SLASH {
+        Ast.DivExpr {lexpr=x; rexpr=y; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
 
 compExprs:
     | LBRACE b=blockStmts; RBRACE {

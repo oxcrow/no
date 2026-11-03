@@ -17,6 +17,11 @@ and blocks = { blockId : int; stmts : stmts list }
 
 (* Statements that emit things *)
 and stmts =
+  | AddStmt of { dest : regs; fromL : regs; fromR : regs }
+  | SubStmt of { dest : regs; fromL : regs; fromR : regs }
+  | MulStmt of { dest : regs; fromL : regs; fromR : regs }
+  | DivStmt of { dest : regs; fromL : regs; fromR : regs }
+  | UDivStmt of { dest : regs; fromL : regs; fromR : regs }
   | CopyStmt of { dest : regs; value : string }
   | RetStmt of { from : regs option }
   | NoneStmt

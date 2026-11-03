@@ -15,7 +15,7 @@ run:
 	@$(NO) compile ../test/step/2-stmt-yield/pass/af.no
 	# 3-expr-comment
 	@$(NO) compile ../test/step/3-expr-comment/pass/aa.no
-x:
+	# 4-expr-binary
 	@$(NO) compile ../test/step/4-expr-binary/pass/aa.no
 	@$(NO) compile ../test/step/4-expr-binary/pass/ab.no
 	@$(NO) compile ../test/step/4-expr-binary/pass/ac.no
