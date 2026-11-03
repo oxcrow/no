@@ -1,0 +1,7 @@
+export fn main() int {
+    :if true {
+        :0
+    } else {
+        :1
+    }
+}

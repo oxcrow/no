@@ -10,7 +10,7 @@
 (package
  (name no)
  (synopsis "No compiler.")
- (description "No: A language for workers of the world.")
+ (description "No: A language for the workers of the world.")
  (tags ("compiler")))
 
 ; dune: https://dune.readthedocs.io/en/stable/reference/dune-project/index.html

@@ -1,0 +1,11 @@
+export fn main() int {
+    let (mut x, mut y) = (1, 0);
+    swap(x.&, y.&);
+    :x
+}
+
+fn swap(x mut int, y mut int) {
+    let temp = x.+;
+    x.& = y.+;
+    y.& = temp.+;
+}

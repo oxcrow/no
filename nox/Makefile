@@ -1,4 +1,4 @@
-NO=OPAMROOTISOK=1 opam exec -- dune exec no
+NO=OPAMROOTISOK=1 opam exec -- dune exec no --
 
 all:
 	@OPAMROOTISOK=1 opam exec -- dune build
@@ -19,6 +19,13 @@ run:
 	@$(NO) compile ../test/step/4-expr-binary/pass/aa.no
 	@$(NO) compile ../test/step/4-expr-binary/pass/ab.no
 	@$(NO) compile ../test/step/4-expr-binary/pass/ac.no
+	# 5-expr-if
+	@$(NO) compile ../test/step/5-expr-if/pass/aa.no
+	# 6-stmt-let
+	@$(NO) compile ../test/step/6-stmt-let/pass/aa.no
+	@$(NO) compile ../test/step/6-stmt-let/pass/ab.no
+	@$(NO) compile ../test/step/6-stmt-let/pass/ac.no
+	@$(NO) compile ../test/step/6-stmt-let/pass/ad.no
 
 clean:
 	opam exec -- dune clean

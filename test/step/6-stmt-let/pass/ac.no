@@ -1,0 +1,4 @@
+export fn main() int {
+    let (x, (y, [a, b])) = (0, ((), [2, 3]));
+    :x
+}

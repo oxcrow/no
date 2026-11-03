@@ -21,7 +21,7 @@ let getIdOfString string =
 
 module SymbolMap = Map.Make (Int)
 
-type env = { records : unit }
+type env = { records : records SymbolMap.t }
 
 and records =
   | FunctionRecord of {
@@ -31,6 +31,6 @@ and records =
       uuid : Ast.uuids;
       loc : Ast.loc;
     }
-  | VarRecord of { name : string; types : Ast.types; uuid : Ast.uuids; loc : Ast.loc }
+  | VarRecord of { name : string; nameId : int; types : Ast.types; uuid : Ast.uuids; loc : Ast.loc }
 
 module BlockMap = Map.Make (Int)

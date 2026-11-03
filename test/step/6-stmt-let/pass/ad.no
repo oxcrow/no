@@ -1,0 +1,7 @@
+export fn main() int {
+    let (a, b) = (0, 1);        // Copy values
+    let (c, d) = (a.+, b.+);    // Copy a, b
+    let (e, f) = (a.*, b.*);    // Move a, b
+    let (g, h) = (e, f);        // Loan e, f
+    :g*h
+}

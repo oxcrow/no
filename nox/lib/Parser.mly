@@ -2,6 +2,7 @@
     let nextEntyId = ref 0
     let nextStmtId = ref 0
     let nextExprId = ref 0
+    let nextVarId = ref 0
 
     let entyId () =
         let id = !nextEntyId in
@@ -21,13 +22,26 @@
         id
     ;;
 
+    let varId () =
+        let id = !nextVarId in
+        nextVarId := !nextVarId + 1;
+        id
+    ;;
+
+    let uuid () : Ast.uuids =
+        let modId = 0 in
+        let entyId = !nextEntyId - 1 in
+        let varId = varId () in
+        let elemId = 0 in
+        {modId; entyId; varId; elemId}
+    ;;
+
     let nullUuid () : Ast.uuids =
         let modId = 0 in
         let entyId = !nextEntyId - 1 in
-        let fileId = -1 in
         let varId = -1 in
         let elemId = 0 in
-        {modId; entyId; fileId; varId; elemId}
+        {modId; entyId; varId; elemId}
     ;;
 
     let location (x: Lexing.position) =
@@ -64,10 +78,8 @@
 %left PLUS MINUS
 %left STAR SLASH
 %left UPLUS UMINUS
-%left DEREF
-%left CONREF MUTREF
-%left TRY UNWRAP
-%left SLICE DOT
+%left UNWRAP TRY MOVE COPY
+%left DOT
 (* Highest priority at the bottom *)
 
 (* Start parsing from the file node *)
@@ -95,7 +107,7 @@ functions:
             | None -> (
                 let endUnitExpr () =
                     stmts @ [Ast.ReturnStmt {
-                        expr=(Ast.UnitExpr{types=Ast.UnitType; exprId=(exprId()); loc=(loc $loc)}); stmtId=(stmtId()); loc=(loc $loc)
+                        expr=(Ast.UnitExpr{exprId=(exprId()); loc=(loc $loc)}); stmtId=(stmtId()); loc=(loc $loc)
                     }]
                 in
                 match (Core.lastOfList stmts) with
@@ -106,7 +118,20 @@ functions:
                 )
                 | None -> endUnitExpr())
         in
-        Ast.Function {scope=s; name=n; args=[]; block=(Ast.Block{stmts=b; types=Ast.TodoType}); types=t; entyId=(entyId()); loc=(loc $loc)}
+        let numExprs = !nextExprId in
+        nextExprId := 0;
+        nextStmtId := 0;
+        nextVarId := 0;
+        Ast.Function {
+            scope=s; name=n; args=[];
+            block=(Ast.Block{stmts=b; types=Ast.TodoType});
+            types=t; numExprs; entyId=(entyId()); loc=(loc $loc)
+        }
+    }
+
+blocks:
+    | LBRACE s=blockStmts; RBRACE {
+        Ast.Block {stmts=s; types=Ast.TodoType}
     }
 
 blockStmts:
@@ -120,14 +145,37 @@ endExprs:
     }
 
 stmts:
+    | LET p=nonempty_seplist(COMMA,pats); EQ e=exprs; SEMICOLON {
+        Ast.LetStmt {expr=e; vars=[]; pats=p; stmtId=(stmtId()); loc=(loc $loc)}
+    }
     | RETURN e=exprs; SEMICOLON {
         Ast.ReturnStmt {expr=e; stmtId=(stmtId()); loc=(loc $loc)}
     }
 
 exprs:
     | LPAREN e=exprs; RPAREN { e }
+    | e=postExprs; { e }
     | e=biopExprs; { e }
+    | e=condExprs; { e }
     | e=compExprs; { e }
+    | e=ifExprs; { e }
+
+postExprs:
+    | x=exprs; DOT y=exprs; %prec DOT {
+        Ast.DotExpr {lexpr=x; rexpr=y; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | e=exprs; DOT EXCLAMATION %prec UNWRAP {
+        Ast.UnwrapExpr {expr=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | e=exprs; DOT QUESTION %prec TRY {
+        Ast.TryExpr {expr=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | e=exprs; DOT STAR %prec MOVE {
+        Ast.MoveExpr {expr=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | e=exprs; DOT PLUS %prec COPY {
+        Ast.CopyExpr {expr=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
 
 biopExprs:
     | x=exprs; PLUS  y=exprs; %prec PLUS  {
@@ -143,11 +191,25 @@ biopExprs:
         Ast.DivExpr {lexpr=x; rexpr=y; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
     }
 
+condExprs:
+    | x=boolExprs; {
+        x
+    }
+
 compExprs:
     | LBRACE b=blockStmts; RBRACE {
         Ast.BlockExpr {block=(Ast.Block{stmts=b; types=Ast.TodoType}); types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
     }
+    | e=groupExprs; { e }
     | e=termExprs; { e }
+
+groupExprs:
+    | LPAREN e=septuple(COMMA,exprs); RPAREN {
+        Ast.TupleExpr {exprs=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | LBRACK e=nonempty_seplist(COMMA,exprs); RBRACK {
+        Ast.ArrayExpr {exprs=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
 
 termExprs:
     | e=names; {
@@ -157,7 +219,56 @@ termExprs:
         Ast.IntExpr {value=e; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
     }
     | LPAREN RPAREN {
-        Ast.UnitExpr {types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+        Ast.UnitExpr {exprId=(exprId()); loc=(loc $loc)}
+    }
+
+ifStmts:
+    | IF c=condExprs; b=blocks; o=option(elseBranch); {
+        Ast.IfStmt {expr=Ast.IfExpr {cond=c; block=b; rest=o; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}; stmtId=(stmtId()); loc=(loc $loc)}
+    }
+ifExprs:
+    | IF c=condExprs; b=blocks; o=elseBranch; {
+        Ast.IfExpr {cond=c; block=b; rest=(Some o); types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+
+elseIfExprs:
+    | ELSE IF c=exprs; b=blocks; o=option(elseBranch); {
+        Ast.ElseIfExpr {cond=c; block=b; rest=o; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+elseExprs:
+    | ELSE b=blocks; {
+        Ast.ElseExpr {block=b; types=Ast.TodoType; exprId=(exprId()); loc=(loc $loc)}
+    }
+elseBranch:
+    | x=elseIfExprs; { x }
+    | x=elseExprs; { x }
+
+boolExprs:
+    | TRUE {
+        Ast.BoolExpr{value=Ast.True; exprId=(exprId()); loc=(loc $loc)}
+    }
+    | FALSE {
+        Ast.BoolExpr{value=Ast.False; exprId=(exprId()); loc=(loc $loc)}
+    }
+
+pats:
+    | LPAREN p=nonempty_seplist(COMMA,pats); RPAREN t=option(types); {
+        Ast.TuplePattern {pats=p; types=t}
+    }
+    | LBRACK p=nonempty_seplist(COMMA,pats); RBRACK t=option(types); {
+        Ast.ArrayPattern {pats=p; types=t}
+    }
+    | v=vars; {
+        Ast.LonePattern {var=v}
+    }
+
+vars:
+    | s=states; n=names; t=option(types); {
+        Ast.Var {
+            state=s; name=n; exprId=(-1);
+            type'=(match t with Some t -> t | None -> Ast.TodoType);
+            uuid=(uuid ()); loc=(loc $loc)
+        }
     }
 
 returnTypes:
@@ -171,7 +282,6 @@ types:
     | LPAREN RPAREN {
         Ast.UnitType
     }
-
 
 states:
     | MUT { Ast.MutState }

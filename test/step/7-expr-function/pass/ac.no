@@ -1,0 +1,9 @@
+export fn main() int {
+    let (x, [y, z]) = (0, [1, 2]);
+    let a = mul(x.*, y.+, y + z);
+    :a
+}
+
+fn mul(x mov int, y mov int, z mov int) int {
+    :x*y*z
+}

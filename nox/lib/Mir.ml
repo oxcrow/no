@@ -1,36 +1,38 @@
 open Core
 
-type file = File of { entities : entities list } [@@deriving show { with_path = false }]
+type modules = Module of { entities : entities list } [@@deriving show { with_path = false }]
 
 (* Entity definitions that exist in the file *)
 and entities =
-  | Function of {
-      scope : scopes;
-      name : string;
-      block : blocks Store.BlockMap.t; [@opaque]
-      types : types;
-    }
+  | Function of { name : string; block : blocks; types : types; ast : Ast.entities }
   | NoneEnty
 
 (* Block that contains instructions to be compiled *)
-and blocks = { blockId : int; stmts : stmts list }
+and blocks = Block of { blockId : int; stmts : stmts list; ast : Ast.blocks }
 
 (* Statements that emit things *)
 and stmts =
-  | AddStmt of { dest : regs; fromL : regs; fromR : regs }
-  | SubStmt of { dest : regs; fromL : regs; fromR : regs }
-  | MulStmt of { dest : regs; fromL : regs; fromR : regs }
-  | DivStmt of { dest : regs; fromL : regs; fromR : regs }
-  | UDivStmt of { dest : regs; fromL : regs; fromR : regs }
-  | CopyStmt of { dest : regs; value : string }
-  | RetStmt of { from : regs option }
+  | BindStmt of { selfId : int; exprId : int; ast : Ast.stmts }
+  | RetStmt of { exprId : int; ast : Ast.stmts }
+  | IfStmt of string
   | NoneStmt
 
-(* Types that we can convert to IR *)
-and types = IntType | UnitType
+and exprs =
+  | MoveExpr of { exprId : int; types : types; ast : Ast.exprs }
+  | LockExpr of { exprId : int; types : types; ast : Ast.exprs }
+  | LoanExpr of { exprId : int; types : types; ast : Ast.exprs }
+  | CopyExpr of { exprId : int; types : types; ast : Ast.exprs }
+  | BoolExpr of { exprId : int; value : bools; ast : Ast.exprs }
+  | IntExpr of { exprId : int; value : string; ast : Ast.exprs }
+  | UnitExpr of { exprId : int; ast : Ast.exprs }
+
+and bools = True | False
+
+(* High level types *)
+and types = Ast.types
 
 (* Scope of the exported element *)
 and scopes = ExportScope | ModuleScope
 
-(* Registers *)
-and regs = { baseId : int; otherId : int; types : types }
+(* Location *)
+and loc = Ast.loc

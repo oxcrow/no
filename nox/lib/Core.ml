@@ -55,7 +55,7 @@ let space = " "
 let caret = "\n"
 
 (* Message line formatters *)
-let errorLine message = ansiRed ^ "+++" ^ ansiReset ^ " " ^ message ^ ansiReset
+let errorLine message = ansiRed ^ "<>" ^ ansiReset ^ " " ^ message ^ ansiReset
 let bendLine message = bendChar ^ dashChar ^ space ^ message
 let sideLine message = sideChar ^ space ^ message
 let tipLine message = tipChar ^ dashChar ^ space ^ message

@@ -114,6 +114,7 @@ let dev () =
       let rootAst = parse filePath in
       (* Create environment from all files *)
       let env, files =
+        let env : Store.env = { records = Store.SymbolMap.empty } in
         let rec addFilesToEnv env files =
           let addToEnv env ast = env in
           match files with
@@ -123,7 +124,7 @@ let dev () =
               addFilesToEnv env tailFile
         in
         let files = [ rootAst ] in
-        (addFilesToEnv () files, files)
+        (addFilesToEnv env files, files)
       in
       (* Infer and check types for all files *)
       let files = List.map (fun file -> Infer.inferFile env file) files in
