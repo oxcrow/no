@@ -77,7 +77,9 @@ and lowerExpr cfg expr blockIndex accStmt =
         let cfg, lowYieldReg, blockIndex, accStmt = lowerBlock cfg e.block blockIndex accStmt in
         (cfg, lowYieldReg, blockIndex, accStmt)
     | Ast.IfExpr e ->
-        let cfg, lowYieldReg, blockIndex, accStmt = lowerIfElse cfg expr blockIndex accStmt [] in
+        let cfg, lowYieldReg, blockIndex, accStmt =
+          lowerIfElse cfg expr None blockIndex accStmt []
+        in
         (cfg, lowYieldReg, blockIndex, accStmt)
     | Ast.ElseIfExpr e ->
         (* Add the condition expression and the first block *)
@@ -202,48 +204,33 @@ and lowerExpr cfg expr blockIndex accStmt =
   in
   (cfg, lowExprReg, blockIndex, accStmt)
 
-and lowerIfElse cfg expr blockIndex accStmt accPhi =
+and lowerIfElse cfg expr mergeBlockIndex blockIndex accStmt accPhi =
   match expr with
   | Ast.IfExpr e ->
       let cfg, lowCondReg, ifBlockIndex, accStmt = lowerExpr cfg e.cond blockIndex accStmt in
       (* Block indices for the three blocks we'll create *)
-      let trueBlockIndex = ifBlockIndex + 1 in
-      let mergeBlockIndex = ifBlockIndex + 2 in
-      let falseBlockIndex = ifBlockIndex + 3 in
-      let blockIndex = match e.rest with Some _ -> ifBlockIndex + 4 | None -> ifBlockIndex + 3 in
+      let trueBlockId = ifBlockIndex + 1 in
+      let falseBlockId =
+        match e.rest with Some _ -> ifBlockIndex + 3 | None -> ifBlockIndex + 2
+      in
+      let blockIndex = falseBlockId + 1 in
       (* Jump if not zero instruction to traverse to the other blocks *)
       let lowJnzStmt =
-        match e.rest with
-        (* If else-if/else branch exists, jump to the false branch. *)
-        | Some _ ->
-            Mir.JnzStmt
-              {
-                condReg = some source lowCondReg;
-                trueBlockId = trueBlockIndex;
-                falseBlockId = falseBlockIndex;
-              }
-        (* If else-if/else branch doesn't exist, then jump to merge. *)
-        | None ->
-            Mir.JnzStmt
-              {
-                condReg = some source lowCondReg;
-                trueBlockId = trueBlockIndex;
-                falseBlockId = mergeBlockIndex;
-              }
+        Mir.JnzStmt { condReg = some source lowCondReg; trueBlockId; falseBlockId }
       in
-      let cfg, blockIndex, accStmt =
+      let cfg, trueBlockIndex, accStmt =
         addNewBlock cfg ifBlockIndex (List.rev (lowJnzStmt :: accStmt))
       in
       (* Add the second block for the true branch *)
       let (cfg, lowTrueBlockReg, blockIndex, accStmt), oldBlockIndex =
-        (lowerBlock cfg e.block blockIndex accStmt, blockIndex)
+        (lowerBlock cfg e.block trueBlockIndex accStmt, trueBlockIndex)
       in
       let lowJmpStmt =
         Mir.JmpStmt
           {
             (* Is this correct? Maybe *)
             fromBlockId = oldBlockIndex;
-            toBlockId = mergeBlockIndex;
+            toBlockId = falseBlockId;
           }
       in
       let cfg, blockIndex, accStmt =
@@ -256,7 +243,7 @@ and lowerIfElse cfg expr blockIndex accStmt accPhi =
         (* We need a false branch *)
         | Some block ->
             let cfg, lowYieldReg, blockIndex, accStmt =
-              lowerIfElse cfg block blockIndex accStmt accPhi
+              lowerIfElse cfg block (Some falseBlockId) blockIndex accStmt accPhi
             in
             (cfg, None, blockIndex, accStmt)
         (* We need a merge branch *)
@@ -267,6 +254,18 @@ and lowerIfElse cfg expr blockIndex accStmt accPhi =
       let (cfg, lowYieldReg, blockIndex, accStmt), oldBlockIndex =
         (lowerBlock cfg e.block blockIndex accStmt, blockIndex)
       in
+      let lowJmpStmt =
+        Mir.JmpStmt
+          {
+            (* Is this correct? Maybe *)
+            fromBlockId = oldBlockIndex;
+            toBlockId = some source mergeBlockIndex;
+          }
+      in
+      let cfg, blockIndex, accStmt =
+        addNewBlock cfg blockIndex (List.rev (lowJmpStmt :: accStmt))
+      in
+      let accStmt = [] in
       (cfg, None, blockIndex, accStmt)
   | _ -> never source "wut?"
 

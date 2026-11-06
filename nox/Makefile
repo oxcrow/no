@@ -4,6 +4,8 @@ all:
 	@OPAMROOTISOK=1 opam exec -- dune build
 
 run:
+	@$(NO) compile ../test/step/5-expr-if/pass/aa.no
+x:
 	# 1-stmt-return
 	@$(NO) compile ../test/step/1-stmt-return/pass/aa.no
 	# 2-stmt-yield
