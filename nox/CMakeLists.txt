@@ -68,7 +68,7 @@ add_compile_options(-pipe)                  # Enable RAM storage
 
 # Compile the code as a library
 file(GLOB_RECURSE SOURCES
-    "*.cc"
+    "lib/core/*.cc"
 )
 add_library(nox STATIC ${SOURCES})
 
