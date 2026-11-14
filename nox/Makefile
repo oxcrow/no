@@ -25,6 +25,9 @@ done:
 	@echo "~"
 	CC=musl-gcc cmake -DMODE=1 -B build/rel
 	@cmake --build build/rel
+test:
+	@cmake --build build/dev --target unit
+	@./build/dev/unit
 
 get:
 	@echo "# We need gcc compilers to build anything"

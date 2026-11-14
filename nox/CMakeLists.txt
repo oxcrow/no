@@ -75,3 +75,9 @@ add_library(nox STATIC ${SOURCES})
 # Compile the compiler
 add_executable(no "main.cc")
 target_link_libraries(no PRIVATE nox)
+
+# Compile the unit test framework
+enable_testing()
+add_executable(unit EXCLUDE_FROM_ALL "../test/unit/check.cc")
+target_link_libraries(unit PRIVATE nox)
+add_test(NAME UnitTests COMMAND unit)

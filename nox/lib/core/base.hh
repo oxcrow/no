@@ -22,6 +22,9 @@
 #define PTRMATH(X) X
 #define PTRCAST(X) X
 
+// Convert to string
+#define STRINGIFY(X) #X
+
 // Common number types
 typedef size_t usize;
 typedef uintptr_t uptr;

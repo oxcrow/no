@@ -18,9 +18,6 @@ int main() {
     };
     Status s = {0};
 
-    a.alloc(4095, 1, 0, s); stop(s);
-    a.alloc(1, 1, 1, s); stop(s);
-
     free(a.mBase.mPtr);
     return 0;
 }
