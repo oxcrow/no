@@ -62,3 +62,28 @@ void Allocator::reset(Memory state) {
     mNumBytesAlloc = state.mLen;
     mBase = state;
 }
+
+const char * readFile(Allocator & mem, const char * filePath, Status & s) {
+    FILE * f = fopen(filePath, "r");
+    char * b = NULL;
+
+    // Ensure we found the correct file
+    const bool fileNotFound = f == NULL; duck(
+        s, b, fileNotFound, "Unable to open file from disk."
+    );
+
+    // Find the size of file by seeking until its end.
+    fseek(f, 0, SEEK_END);
+    const usize fileSize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    // Allocate memory for buffer (+1 for null terminator)
+    b = (char *)mem.alloc(fileSize + 1, sizeof(char), 16, s).mPtr; back(s, b);
+
+    // Read contents of file and append the null terminator to its end
+    const usize bytesRead = fread(b, 1, fileSize, f);
+    b[bytesRead] = '\0';
+    fclose(f);
+
+    return b;
+}

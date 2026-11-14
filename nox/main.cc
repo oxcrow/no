@@ -4,6 +4,8 @@
 
 #include "lib/core/args.hh"
 #include "lib/core/base.hh"
+//
+#include "lib/parse/parse.hh"
 
 void usage() {
     fprintf(stderr, "Usage: no <command> [options]\n");
@@ -58,6 +60,15 @@ int main(int argc, char ** argv) {
         args.mCompile.mMaxBytesAlloc,
         0,
     };
+
+    switch (args.mCommand) {
+    case Argument::ARG_CMD_COMPILE: {
+        parseModule(mem, args.mCompile.mFilePath, s); stop(s);
+        break;
+    }
+    default:
+        break;
+    }
 
     free(mem.mBase.mPtr);
     return 0;

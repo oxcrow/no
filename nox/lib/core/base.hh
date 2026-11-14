@@ -43,6 +43,12 @@ struct Status {
     usize mLen;
 };
 
+/// Container that may optionally contain value
+template <typename T>
+struct Option {
+    T mItem;
+};
+
 // Mathematical macros
 #define MIN(X, Y) (((X) <= (Y)) ? (X) : (Y))
 #define MAX(X, Y) (((X) >= (Y)) ? (X) : (Y))
@@ -106,8 +112,21 @@ struct Status {
         dieAt((STATUS).mMessage[0], (STATUS).mFilePath, (STATUS).mLineIdx); \
     }
 
+#define ensure(STATUS, ERROR, CONDITION, MESSAGE) duck(STATUS, ERROR, !(CONDITION), MESSAGE)
+
 /// Kill process and report error at given position
 void dieAt(const char * message, const char * filePath, usize lineIdx);
+
+/// Verify index does not access out of bounds
+static inline usize indexAt(usize idx, usize arrayLen, const char * filePath, usize lineIdx) {
+    if (!(idx < arrayLen)) {
+        dieAt("Unable to access array index since it is out of bounds.", filePath, lineIdx);
+    }
+    return idx;
+}
+
+/// Verify index does not access out of bounds
+#define at(INDEX, LENGTH) indexAt((INDEX), (LENGTH), SOURCE, LINE)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Memory handling utils
@@ -137,3 +156,9 @@ struct Allocator {
     /// Reset the allocator to a previous state.
     void reset(Memory state);
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// File handling utils
+///////////////////////////////////////////////////////////////////////////////
+
+const char * readFile(Allocator & mem, const char * filePath, Status & s);

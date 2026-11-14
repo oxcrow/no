@@ -47,8 +47,19 @@ strip:
 clean:
 	-rm build/* -rf
 
-run:
-	-@$(NO) compile ../test/step/001-stmt-return/pass/aa.no
+run: step
+
+step:
+	-@$(NO) compile ../test/step/001-stmt-return/pass/001-return-zero-aa.no
+	-@$(NO) compile ../test/step/001-stmt-return/pass/002-return-unit-aa.no
+	-@$(NO) compile ../test/step/001-stmt-return/pass/002-return-unit-ab.no
+	@#
+	-@$(NO) compile ../test/step/002-stmt-yield/pass/001-yield-zero-aa.no
+	-@$(NO) compile ../test/step/002-stmt-yield/pass/002-yield-unit-aa.no
+	@#
+	-@$(NO) compile ../test/step/003-expr-block/pass/001-return-zero-aa.no
+	-@$(NO) compile ../test/step/003-expr-block/pass/002-return-unit-aa.no
+	-@$(NO) compile ../test/step/003-expr-block/pass/002-return-unit-ab.no
 
 MAKEFLAGS += --no-print-directory
 .PHONY: clean test run
