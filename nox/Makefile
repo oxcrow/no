@@ -48,7 +48,7 @@ clean:
 	-rm build/* -rf
 
 run:
-	-@$(NO)
+	-@$(NO) compile ../test/step/001-stmt-return/pass/aa.no
 
 MAKEFLAGS += --no-print-directory
 .PHONY: clean test run

@@ -50,9 +50,14 @@ struct Status {
 // ANSI codes
 #define ANSI_FAINT  "\033[2m"
 #define ANSI_ITALIC "\033[3m"
+#define ANSI_BLACK  "\033[30m"
 #define ANSI_RED    "\033[31m"
 #define ANSI_GREEN  "\033[32m"
+#define ANSI_YELLOW "\033[33m"
+#define ANSI_BLUE   "\033[34m"
+#define ANSI_PURPLE "\033[35m"
 #define ANSI_CYAN   "\033[36m"
+#define ANSI_WHITE  "\033[37m"
 #define ANSI_RESET  "\033[0m"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,7 +66,7 @@ struct Status {
 
 /// Invoke function and return error if it fails.
 ///
-/// Use as, `auto x = something(); back(status);`
+/// Use as, `auto x = something(); back(status, error);`
 ///
 /// This looks little bit ugly, but it works good enough for us.
 /// 1. The {} around if branch prevents it from getting attached to an else
