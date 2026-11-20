@@ -1,0 +1,7 @@
+pub fn main() int {
+    let ab = (0, 1);
+    let cd = [1, 2];
+    let a = ab[0];
+    let c = cd[1];
+    :a
+}

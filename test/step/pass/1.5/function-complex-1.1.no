@@ -1,0 +1,7 @@
+pub fn main() int {
+    :mul(0, 1)
+}
+
+fn mul(x mov int, y mov int) int {
+    :x*y
+}

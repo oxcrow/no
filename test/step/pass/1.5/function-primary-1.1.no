@@ -1,0 +1,7 @@
+pub fn main() int {
+    :zero()
+}
+
+fn zero() int {
+    :0
+}

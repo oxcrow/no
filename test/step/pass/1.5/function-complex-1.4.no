@@ -1,0 +1,14 @@
+pub fn main() int {
+    let (a, b) = (0, 1);
+    let (c, d) = swap1(a, b);
+    let [e, f] = swap2(c, d);
+    :e
+}
+
+fn swap1(x mov int, y mov int) (int, int) {
+    :(y, x)
+}
+
+fn swap2(x mov int, y mov int) [int, int] {
+    :[y, x]
+}

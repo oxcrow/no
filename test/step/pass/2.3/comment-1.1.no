@@ -1,0 +1,10 @@
+/// A heoric function that saves the world
+pub fn main() int {
+    : /* Nothing to see here */ // 0 // (~ 3 ~)
+    /*
+    {
+        Must have been the wind
+    }
+    */
+    0
+}

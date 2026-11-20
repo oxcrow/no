@@ -1,0 +1,12 @@
+pub fn main() int {
+    let (mut a, mut b) = (0, 1);
+    swap(a.&, b.&);
+    swap(b.&, a.&);
+    :a
+}
+
+fn swap(x mut int, y mut int) {
+    let temp = x.+;
+    x = y.+;
+    y = temp.+;
+}

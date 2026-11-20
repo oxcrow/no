@@ -1,0 +1,8 @@
+pub fn main() int {
+    let (a, b) = (0, 1);
+    :mul(mul(a, b.+), b)
+}
+
+fn mul(x mov int, y mov int) int {
+    :x*y
+}

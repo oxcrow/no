@@ -1,0 +1,3 @@
+pub fn main() int {
+    return 0;
+}
