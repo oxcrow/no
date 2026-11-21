@@ -1,0 +1,44 @@
+pub fn main() int {
+    // Can we initialize objects on stack?
+    // Can we initialize arrays on stack?
+    // Can we initialize immutable vars?
+    locs = [4] Loc.{
+        Loc.{.x = 0, .y = 0},
+        Loc.{.x = 1, .y = 0},
+        Loc.{.x = 1, .y = 1},
+        Loc.{.x = 0, .y = 1},
+    }
+
+    // Can we initialize tuples on stack?
+    r = (bool, int).{true, @as(int, 2)}
+
+    // Can we initialize mutable vars?
+    // Can we calculate the total?
+    &total = 0
+
+    // Can we execute code in conditional loops?
+    // Can we initialize mutable vars?
+    // Can we call methods in objects?
+    for &sum = 0; x in locs {
+        if sum < 3 {
+            sum& += x.sum()*r[1]
+        } else {
+            if r[0] {
+                sum& -= x.y
+            }
+        }
+    } then {
+        total& = sum
+    }
+
+    :total
+}
+
+struct Loc {
+    x int,
+    y int
+    //
+    fn sum(self Loc) int {
+        :self.y + self.x
+    }
+}
