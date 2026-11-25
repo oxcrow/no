@@ -43,6 +43,10 @@ func Hint(m string) string {
 	return fmt.Sprintf("    %sHint:%s %s", ANSI_GREEN, ANSI_RESET, m)
 }
 
+func Line(i int, m string) string {
+	return fmt.Sprintf("    %s%5d%s %s", ANSI_GREEN, i, ANSI_RESET, m)
+}
+
 func Todo(m string) []string {
 	return []string{
 		Damn("This section of code is not yet implemented."),

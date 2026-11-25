@@ -1,16 +1,19 @@
 package data
 
+import (
+	. "no/core"
+)
+
 type Ast struct {
 	// All of the nodes that exist in file.
 	Nodes []Node
-	// We only store the start character index of each nodes's span.
-	// We can lex later, if we need the full span.
-	Spans []uint32
 	// Path to the file
 	File string
 }
 
 type Node struct {
+	// Index of this node in the AST
+	SelfIdx uint32
 	// Auxiliary data for different AST nodes, that we store in side arrays.
 	// - For complex nodes, like function, struct, etc, we store the index to
 	//   an array that packs the data in u8 blocks, in lhs. This allows us to
@@ -20,10 +23,12 @@ type Node struct {
 	// - For Int, float, etc. have no other data.
 	LhsIdx uint32
 	RhsIdx uint32
-	// What node is this?
-	Kind TokenKind
-	// Wasted
-	_ [3]uint8
+	// Where does the node begin?
+	CharIdx uint16
+	// What kind of node is this?
+	Kind NodeKind
+	// Whatever flag we need.
+	Flag uint8
 }
 
 type Token struct {
@@ -36,6 +41,7 @@ type Token struct {
 }
 
 type TokenKind uint8
+type NodeKind uint8
 
 const (
 	TOKEN_WHITESPACE TokenKind = iota
@@ -65,19 +71,6 @@ const (
 	TOKEN_TYPE
 	TOKEN_UNION
 	TOKEN_USE
-
-	TOKEN_BOOL
-	TOKEN_INT
-	TOKEN_F64
-	TOKEN_F32
-	TOKEN_U64
-	TOKEN_I64
-	TOKEN_U32
-	TOKEN_I32
-	TOKEN_U16
-	TOKEN_I16
-	TOKEN_U8
-	TOKEN_I8
 
 	TOKEN_EXCLAMATION
 	TOKEN_SEMICOLON
@@ -124,13 +117,55 @@ const (
 	TOKEN_NONE
 )
 
+const (
+	NODE_NONE NodeKind = iota
+
+	NODE_XSTRUCT
+	NODE_XARRAY
+	NODE_XTUPLE
+	NODE_XNAME
+	NODE_XBOOL
+	NODE_XCALL
+	NODE_XSTR
+	NODE_XINT
+
+	NODE_MOD
+)
+
+func (a *Ast) AddNode(n Node) {
+	// So we don't blow up memory by looping infinitely
+	if n.Kind.IsValid() {
+		n.SelfIdx = uint32(len(a.Nodes))
+		a.Nodes = append(a.Nodes, n)
+	} else {
+		Die(Todo("add-node"))
+	}
+}
+
 func (a Ast) BytesPerNode(code string) float64 {
 	return float64(len(code)) / float64(max(len(a.Nodes), 1.0))
+}
+
+func (t Token) Len() int {
+	return int(t.Span[1] - t.Span[0])
+}
+
+func (n *Node) SetCharIdx(s uint32) {
+	n.CharIdx = uint16(s)
 }
 
 func (k TokenKind) IsValid() bool {
 	switch k {
 	case TOKEN_NONE:
+		return false
+	default:
+		return true
+	}
+}
+
+func (k NodeKind) IsValid() bool {
+	switch k {
+	case NODE_NONE:
 		return false
 	default:
 		return true

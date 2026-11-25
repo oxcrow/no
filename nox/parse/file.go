@@ -3,6 +3,10 @@ package parse
 import (
 	. "no/core"
 	. "no/data"
+
+	"fmt"
+	"runtime"
+	"strings"
 )
 
 // Ambiguities we should be aware of?
@@ -55,6 +59,10 @@ type ParserState struct {
 	Next Token
 }
 
+func (p Parser) CurrToken() Token {
+	return p.State.Curr
+}
+
 func (p Parser) CurrKind() TokenKind {
 	return p.State.Curr.Kind
 }
@@ -63,8 +71,193 @@ func (p Parser) NextKind() TokenKind {
 	return p.State.Next.Kind
 }
 
+func (p Parser) CurrText() string {
+	return p.Code[p.State.Curr.Span[0]:p.State.Curr.Span[1]]
+}
+
+func (p Parser) CurrLineText() string {
+	startIdx := p.State.CharIdx
+	endIdx := len(p.Code)
+	for i := p.State.CharIdx; i >= 0; i-- {
+		if p.Code[i] == '\n' {
+			startIdx = i + 1
+			break
+		}
+	}
+	for i, c := range p.Code[p.State.CharIdx:] {
+		if c == '\n' {
+			endIdx = p.State.CharIdx + i
+			break
+		}
+	}
+	return p.Code[startIdx:endIdx]
+}
+
+func (p Parser) PeekLineText(lineIdx int) string {
+	startIdx := 0
+	endIdx := len(p.Code)
+	newLineIdx := 0
+	found := false
+
+	s := ""
+
+	if lineIdx >= 0 {
+		for i, c := range p.Code {
+			if c == '\n' {
+				newLineIdx++
+			}
+			if newLineIdx == lineIdx && startIdx == 0 {
+				// We can't break out, so we only run this once
+				startIdx = i + 1
+			} else if newLineIdx == lineIdx+1 {
+				endIdx = i
+				found = true
+				break
+			}
+		}
+		if found {
+			if p.State.CharIdx >= startIdx && p.State.CharIdx <= endIdx {
+				// BUG: This code causes out of bounds error, when erroridx is negative
+				errorIdx := startIdx + (int(p.CurrToken().Span[0]) - startIdx)
+				s = p.Code[startIdx:errorIdx] +
+					fmt.Sprintf("%s%s%s%s", ANSI_ITALIC, ANSI_RED, "<<<look around here>>>", ANSI_RESET) +
+					p.Code[errorIdx:endIdx]
+			} else {
+				s = p.Code[startIdx:endIdx]
+			}
+		}
+	}
+
+	return s
+}
+
+func (p Parser) PeekKind(steps uint32) TokenKind {
+	charIdx := int(p.State.Curr.Span[0])
+	lineIdx := int(p.State.Curr.LineIdx)
+	t := p.State.Curr
+
+	for i := 0; i < int(steps+1); i++ {
+		if p.IsEof() {
+			return TOKEN_NONE
+		}
+		if p.Code[charIdx] == '\n' {
+			lineIdx++
+		}
+		{
+			n := LexWord(p.Code, charIdx, lineIdx)
+			for func() bool {
+				switch n.Kind {
+				case TOKEN_WHITESPACE, TOKEN_COMMENT:
+					return true
+				default:
+					return false
+				}
+			}() {
+				n = LexWord(p.Code, int(n.Span[1]), int(n.LineIdx))
+			}
+			t = n
+		}
+		charIdx += t.Len()
+	}
+
+	return t.Kind
+}
+
 func (p Parser) IsEof() bool {
 	return p.State.CharIdx >= len(p.Code)
+}
+
+func (p *Parser) LexWord() {
+	if p.IsEof() {
+		p.State.Curr = p.State.Next
+		p.State.Next.Kind = TOKEN_NONE
+		p.State.Next.Span[0] = uint32(len(p.Code))
+		p.State.Next.Span[1] = uint32(len(p.Code) + 1)
+		return
+	}
+	if p.Code[p.State.CharIdx] == '\n' {
+		p.State.LineIdx++
+	}
+
+	t := LexWord(p.Code, p.State.CharIdx, p.State.LineIdx)
+	if !t.Kind.IsValid() {
+		Die([]string{Damn("Parsed token is not valid")})
+	}
+
+	switch t.Kind {
+	case TOKEN_WHITESPACE, TOKEN_COMMENT:
+		p.State.CharIdx += t.Len()
+		p.LexWord()
+	default:
+		p.State.Curr = p.State.Next
+		p.State.Next = t
+		p.State.CharIdx += t.Len()
+	}
+}
+
+func (p Parser) Hecc(e int) []string {
+	l := []string{
+		"",
+		Info(ANSI_ITALIC + "Could you kindly look around the marked section of code?" + ANSI_RESET),
+		"",
+		Line(p.State.LineIdx+1-2, p.PeekLineText(p.State.LineIdx-2)),
+		Line(p.State.LineIdx+1-1, p.PeekLineText(p.State.LineIdx-1)),
+		Line(p.State.LineIdx+1+0, p.PeekLineText(p.State.LineIdx+0)),
+		Line(p.State.LineIdx+1+1, p.PeekLineText(p.State.LineIdx+1)),
+		Line(p.State.LineIdx+1+2, p.PeekLineText(p.State.LineIdx+2)),
+	}
+	s := []string{}
+	h := []string{}
+
+	if e == 0 {
+		s = []string{Damn("Unable to match expected token while parsing code.")}
+		h = []string{
+			Hint("Most likely you wrote code with wrong grammar."),
+			Hint("I don't know what hints will help fix this."),
+			Hint("So, \"Words of encouragement\" ~ Rocky"),
+		}
+		s = append(s, l...)
+		s = append(s, "")
+		s = append(s, h...)
+	} else {
+		e, h := Buck(e)
+		s = append(s, e...)
+		s = append(s, l...)
+		if len(h) > 0 {
+			s = append(s, "")
+			s = append(s, h...)
+		}
+	}
+
+	return s
+}
+
+func (p *Parser) Consume(k TokenKind, e int) Token {
+	t := p.State.Curr
+	if p.State.Curr.Kind != k {
+		_, file, line, _ := runtime.Caller(1)
+		_, file, _ = strings.Cut(file, "nox")
+		file = "nox" + file
+		DieAt(p.Hecc(e), file, line)
+	}
+	p.LexWord()
+	return t
+}
+
+func (p *Parser) Maybe(k TokenKind) Token {
+	t := p.State.Curr
+	if p.State.Curr.Kind == k {
+		p.LexWord()
+	}
+	return t
+}
+
+func (p *Parser) Exists(k TokenKind) bool {
+	if p.CurrKind() == k {
+		p.Consume(k, 0)
+		return true
+	}
+	return false
 }
 
 func ParseFile(filePath string) (Ast, string) {
@@ -79,14 +272,412 @@ func ParseFile(filePath string) (Ast, string) {
 		Code: code,
 		Ast: Ast{
 			Nodes: make([]Node, 0, guessNumNodes),
-			Spans: make([]uint32, 0, guessNumNodes),
 			File:  filePath,
 		},
 	}
 
-	testLexer(p)
+	// Initialize the parser state by running it twice.
+	p.LexWord()
+	p.LexWord()
 
+	hasMod, modNode := func() (bool, Node) {
+		if p.CurrKind() == TOKEN_MOD {
+			modToken := p.Consume(TOKEN_MOD, 0)
+			switch p.CurrKind() {
+			case TOKEN_XNAME:
+				nameToken := p.Consume(TOKEN_XNAME, 0)
+				Ignore(nameToken)
+			case TOKEN_DOT:
+				Die(Todo("parse-mod-path"))
+			default:
+			}
+			modNode := Node{
+				CharIdx: uint16(modToken.Span[0]),
+				Kind:    NODE_MOD,
+			}
+			return true, modNode
+		}
+		return false, Node{}
+	}()
+
+	ParseEntityList(&p, IsEntity)
+
+	Ignore(hasMod, modNode)
 	return p.Ast, code
+}
+
+func ParseEntityList(p *Parser, e func(TokenKind) bool) Node {
+	n := Node{}
+	for e(p.CurrKind()) {
+		hasPub := p.Exists(TOKEN_PUB)
+		switch p.CurrKind() {
+		case TOKEN_FUNC:
+			p.Consume(TOKEN_FUNC, 0)
+			p.Consume(TOKEN_XNAME, 0)
+			p.Consume(TOKEN_LPAREN, 0)
+			for p.CurrKind() != TOKEN_RPAREN {
+				p.Consume(TOKEN_XNAME, 0)
+				ParseType(p)
+				if p.CurrKind() != TOKEN_RPAREN {
+					p.Consume(TOKEN_COMMA, 0)
+				}
+			}
+			p.Consume(TOKEN_RPAREN, 0)
+			ParseRetType(p)
+			ParseBlock(p)
+		case TOKEN_STRUCT:
+			p.Consume(TOKEN_STRUCT, 0)
+			p.Consume(TOKEN_XNAME, 0)
+			p.Consume(TOKEN_LBRACE, 0)
+			// Parse member variables inside structs
+			for p.CurrKind() != TOKEN_FUNC && p.CurrKind() != TOKEN_RBRACE {
+				hasPub := p.Exists(TOKEN_PUB)
+				p.Consume(TOKEN_XNAME, 0)
+				ParseType(p)
+				if p.CurrKind() != TOKEN_FUNC && p.CurrKind() != TOKEN_RBRACE {
+					p.Consume(TOKEN_COMMA, 0)
+				}
+				Ignore(hasPub)
+			}
+			// Parse functions and structs inside structs
+			for p.CurrKind() != TOKEN_RBRACE {
+				hasPub := p.Exists(TOKEN_PUB)
+				ParseEntityList(p, IsEntityStruct)
+				if !IsEntityStruct(p.CurrKind()) && p.CurrKind() != TOKEN_RBRACE {
+					Die(p.Hecc(EStructInStruct))
+				}
+				Ignore(hasPub)
+			}
+			p.Consume(TOKEN_RBRACE, 0)
+		default:
+			Die(Todo("parse-entity"))
+		}
+		Ignore(hasPub)
+	}
+	return n
+}
+
+func ParseRetType(p *Parser) Node {
+	n := Node{}
+	switch p.CurrKind() {
+	case TOKEN_LBRACE:
+		// Unit type
+	default:
+		n = ParseType(p)
+	}
+	return n
+}
+
+func ParseType(p *Parser) Node {
+	n := Node{}
+	switch p.CurrKind() {
+	case TOKEN_XNAME:
+		p.Consume(TOKEN_XNAME, 0)
+		n.Kind = NODE_XNAME
+	default:
+		Die(Todo("parse-type"))
+	}
+	return n
+}
+
+func ParseBlock(p *Parser) Node {
+	n := Node{}
+	p.Consume(TOKEN_LBRACE, 0)
+	s := ParseStmtList(p, InStmt)
+	if p.CurrKind() == TOKEN_COLON {
+		p.Consume(TOKEN_COLON, 0)
+		ParseExpr(p, InStmt)
+	}
+	p.Consume(TOKEN_RBRACE, 0)
+	Ignore(s)
+	return n
+}
+
+func ParseStmtList(p *Parser, b BlockKind) Node {
+	n := Node{}
+	for IsStmtOkay(p.CurrKind(), b) {
+		switch p.CurrKind() {
+		case TOKEN_FOR:
+			p.Consume(TOKEN_FOR, 0)
+			ParseStmtList(p, InFor)
+			p.Consume(TOKEN_LBRACE, 0)
+			ParseStmtList(p, InStmt)
+			p.Consume(TOKEN_RBRACE, 0)
+			hasThen := p.Exists(TOKEN_THEN)
+			if hasThen {
+				p.Consume(TOKEN_LBRACE, 0)
+				ParseStmtList(p, InStmt)
+				p.Consume(TOKEN_RBRACE, 0)
+			}
+		case TOKEN_MATCH:
+			Die(Todo("parse-match"))
+		case TOKEN_IF:
+			Die(Todo("parse-if"))
+		case TOKEN_BREAK:
+			Die(Todo("parse-break"))
+		case TOKEN_CONTINUE:
+			Die(Todo("parse-continue"))
+		case TOKEN_XNAME, TOKEN_AMPERSAND:
+			// Variable assignment
+			// a& += expr
+			// a& -= expr
+			// a& *= expr
+			// a& /= expr
+			// a&++
+			// a&--
+			// BUG: Won't work for
+			// a[i].& <op> expr
+			// a.b.& <op> expr
+			k0 := p.CurrKind()
+			k1 := p.PeekKind(1)
+			k2 := p.PeekKind(2)
+			if k0 == TOKEN_XNAME && k1 == TOKEN_AMPERSAND &&
+				(k2 == TOKEN_PLUSEQ || k2 == TOKEN_MINUSEQ || k2 == TOKEN_STAREQ || k2 == TOKEN_SLASHEQ) {
+				p.Consume(TOKEN_XNAME, 0)
+				p.Consume(TOKEN_AMPERSAND, 0)
+				p.Consume(k2, 0)
+				ParseExpr(p, b)
+				p.Maybe(TOKEN_SEMICOLON)
+			} else {
+				switch p.PeekKind(1) {
+				// Single variable declaration
+				// a = expr
+				// Multi variable declaration
+				// a, &b = expr
+				// a, = expr
+				// Loop iter range
+				// a in expr
+				case TOKEN_XNAME, TOKEN_EQ, TOKEN_IN, TOKEN_COMMA:
+					for p.CurrKind() != TOKEN_EQ && p.CurrKind() != TOKEN_IN {
+						hasVar := p.Exists(TOKEN_AMPERSAND)
+						p.Consume(TOKEN_XNAME, 0)
+						if p.CurrKind() != TOKEN_EQ && p.CurrKind() != TOKEN_IN {
+							p.Consume(TOKEN_COMMA, 0)
+						}
+						Ignore(hasVar)
+					}
+					hasEq := p.Exists(TOKEN_EQ)
+					hasIn := p.Exists(TOKEN_IN)
+					ParseExpr(p, b)
+					p.Maybe(TOKEN_SEMICOLON)
+					Ignore(hasEq, hasIn)
+				// Field access and call
+				// a.b();
+				// a.b
+				case TOKEN_DOT:
+					switch p.PeekKind(2) {
+					case TOKEN_XNAME:
+						Die(Todo("parse-path"))
+					default:
+						Die(Todo("wut?"))
+					}
+				// Variable updates
+				// a& = expr
+				case TOKEN_AMPERSAND:
+					p.Consume(TOKEN_XNAME, 0)
+					p.Consume(TOKEN_AMPERSAND, 0)
+					p.Consume(TOKEN_EQ, 0)
+					ParseExpr(p, b)
+					p.Maybe(TOKEN_SEMICOLON)
+				// Common function call
+				// a()
+				case TOKEN_LPAREN:
+					Die(Todo("parse-call"))
+				default:
+					Die(Todo("wut?"))
+				}
+			}
+		default:
+			Die(Todo("parse-stmt"))
+		}
+	}
+	return n
+}
+
+func ParseList(p *Parser, k TokenKind, sep TokenKind, end TokenKind) Node {
+	n := Node{}
+	for p.CurrKind() != end {
+		p.Consume(k, 0)
+		if p.CurrKind() != end {
+			p.Consume(sep, 0)
+		}
+	}
+	return n
+}
+
+func ParseExpr(p *Parser, b BlockKind) Node {
+	n := Node{}
+	switch p.CurrKind() {
+	// Parse arrays: [3]int.{0, 1, 2}
+	case TOKEN_LBRACK:
+		switch p.PeekKind(1) {
+		case TOKEN_RBRACK:
+			Die(Todo("slice-exprs"))
+		case TOKEN_XINT:
+			switch p.PeekKind(2) {
+			case TOKEN_RBRACK:
+				n.SetCharIdx(p.CurrToken().Span[0])
+				p.Consume(TOKEN_LBRACK, 0)
+				p.Consume(TOKEN_XINT, 0)
+				p.Consume(TOKEN_RBRACK, 0)
+				typeNode := ParseType(p)
+				p.Consume(TOKEN_DOT, 0)
+				p.Consume(TOKEN_LBRACE, 0)
+				for p.CurrKind() != TOKEN_RBRACE {
+					exprNode := ParseExpr(p, b)
+					if p.CurrKind() != TOKEN_RBRACE {
+						p.Consume(TOKEN_COMMA, EParseArrayExpectComma)
+					}
+					Ignore(exprNode)
+				}
+				p.Consume(TOKEN_RBRACE, 0)
+				n.Kind = NODE_XARRAY
+				Ignore(typeNode)
+			default:
+				Die(Todo("wut?"))
+			}
+		default:
+		}
+	// Parse tuples: (T,U,V).{0, 1, 2}
+	case TOKEN_LPAREN:
+		switch p.PeekKind(2) {
+		case TOKEN_COMMA:
+			n.SetCharIdx(p.CurrToken().Span[0])
+			p.Consume(TOKEN_LPAREN, 0)
+			for p.CurrKind() != TOKEN_RPAREN {
+				ParseType(p)
+				if p.CurrKind() != TOKEN_RPAREN {
+					p.Consume(TOKEN_COMMA, 0)
+				}
+			}
+			p.Consume(TOKEN_RPAREN, 0)
+			p.Consume(TOKEN_DOT, 0)
+			p.Consume(TOKEN_LBRACE, 0)
+			for p.CurrKind() != TOKEN_RBRACE {
+				ParseExpr(p, b)
+				if p.CurrKind() != TOKEN_RBRACE {
+					p.Consume(TOKEN_COMMA, 0)
+				}
+			}
+			p.Consume(TOKEN_RBRACE, 0)
+			n.Kind = NODE_XTUPLE
+		default:
+			Die(Todo("wut?"))
+		}
+	case TOKEN_XNAME:
+		if b == InStmt {
+			switch p.PeekKind(1) {
+			// Parse structs: A.{.a=0, .b=2, .c=3}
+			case TOKEN_DOT:
+				n.SetCharIdx(p.CurrToken().Span[0])
+				p.Consume(TOKEN_XNAME, 0)
+				p.Consume(TOKEN_DOT, 0)
+				p.Consume(TOKEN_LBRACE, 0)
+				for p.CurrKind() != TOKEN_RBRACE {
+					p.Consume(TOKEN_DOT, EParseStructExpectDot)
+					p.Consume(TOKEN_XNAME, 0)
+					p.Consume(TOKEN_EQ, 0)
+					ParseExpr(p, b)
+					if p.CurrKind() != TOKEN_RBRACE {
+						p.Consume(TOKEN_COMMA, EParseStructExpectComma)
+					}
+				}
+				p.Consume(TOKEN_RBRACE, 0)
+				n.Kind = NODE_XSTRUCT
+			// Parse calls: A(0, 1, 2)
+			case TOKEN_LPAREN:
+				n.SetCharIdx(p.CurrToken().Span[0])
+				p.Consume(TOKEN_XNAME, 0)
+				p.Consume(TOKEN_LPAREN, 0)
+				for p.CurrKind() != TOKEN_RPAREN {
+					ParseExpr(p, b)
+					if p.CurrKind() != TOKEN_RPAREN {
+						p.Consume(TOKEN_COMMA, 0)
+					}
+				}
+				n.Kind = NODE_XCALL
+				p.Consume(TOKEN_RPAREN, 0)
+			default:
+				n.SetCharIdx(p.CurrToken().Span[0])
+				p.Consume(TOKEN_XNAME, 0)
+				n.Kind = NODE_XNAME
+			}
+		} else {
+			n.SetCharIdx(p.CurrToken().Span[0])
+			p.Consume(TOKEN_XNAME, 0)
+			n.Kind = NODE_XNAME
+		}
+	case TOKEN_XINT:
+		n.SetCharIdx(p.CurrToken().Span[0])
+		p.Consume(TOKEN_XINT, 0)
+		n.Kind = NODE_XINT
+	case TOKEN_XTRUE, TOKEN_XFALSE:
+		n.SetCharIdx(p.CurrToken().Span[0])
+		p.Consume(p.CurrKind(), 0)
+		n.Kind = NODE_XBOOL
+	default:
+		Die(Todo("parse-expr"))
+	}
+	p.Ast.AddNode(n)
+	return n
+}
+
+func IsStmtOkay(k TokenKind, b BlockKind) bool {
+	switch b {
+	case InStmt:
+		return IsStmt(k)
+	case InFor:
+		return IsStmtFor(k)
+	default:
+		Die(Todo("is-stmt-okay"))
+	}
+	return false
+}
+
+type BlockKind uint8
+
+const (
+	InStmt BlockKind = iota
+	InFor
+	InIf
+)
+
+func IsEntity(k TokenKind) bool {
+	switch k {
+	case TOKEN_PUB, TOKEN_FUNC, TOKEN_STRUCT:
+		return true
+	default:
+		return false
+	}
+}
+func IsEntityStruct(k TokenKind) bool {
+	switch k {
+	case TOKEN_PUB, TOKEN_FUNC:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsStmt(k TokenKind) bool {
+	switch k {
+	case TOKEN_FOR, TOKEN_MATCH, TOKEN_IF, TOKEN_BREAK, TOKEN_CONTINUE:
+		return true
+	case TOKEN_XNAME, TOKEN_AMPERSAND:
+		return true
+	case TOKEN_LBRACE:
+		return true
+	default:
+		return false
+	}
+}
+func IsStmtFor(k TokenKind) bool {
+	switch k {
+	case TOKEN_XNAME, TOKEN_AMPERSAND:
+		return true
+	default:
+		return false
+	}
 }
 
 func LexWord(code string, charIdx int, lineIdx int) Token {
@@ -134,9 +725,6 @@ func LexWord(code string, charIdx int, lineIdx int) Token {
 		if a == 'b' && b == 'r' && c == 'e' && d == 'a' && e == 'k' && isdel(f) {
 			t.Kind = TOKEN_BREAK
 			t.Span = s5
-		} else if a == 'b' && b == 'o' && c == 'o' && d == 'l' && isdel(e) {
-			t.Kind = TOKEN_BOOL
-			t.Span = s4
 		}
 	case 'c':
 		if a == 'c' && b == 'o' && c == 'n' && d == 't' && e == 'i' && f == 'n' && g == 'u' && h == 'e' && isdel(i) {
@@ -173,21 +761,6 @@ func LexWord(code string, charIdx int, lineIdx int) Token {
 			t.Span = s2
 		} else if a == 'i' && b == 'n' && isdel(c) {
 			t.Kind = TOKEN_IN
-			t.Span = s2
-		} else if a == 'i' && b == 'n' && c == 't' && isdel(d) {
-			t.Kind = TOKEN_INT
-			t.Span = s3
-		} else if a == 'i' && b == '6' && c == '4' && isdel(d) {
-			t.Kind = TOKEN_I64
-			t.Span = s3
-		} else if a == 'i' && b == '3' && c == '2' && isdel(d) {
-			t.Kind = TOKEN_I32
-			t.Span = s3
-		} else if a == 'i' && b == '1' && c == '6' && isdel(d) {
-			t.Kind = TOKEN_I16
-			t.Span = s3
-		} else if a == 'i' && b == '8' && isdel(c) {
-			t.Kind = TOKEN_I8
 			t.Span = s2
 		}
 	case 'l':
@@ -251,18 +824,6 @@ func LexWord(code string, charIdx int, lineIdx int) Token {
 		} else if a == 'u' && b == 's' && c == 'e' && isdel(d) {
 			t.Kind = TOKEN_USE
 			t.Span = s3
-		} else if a == 'u' && b == '6' && c == '4' && isdel(d) {
-			t.Kind = TOKEN_U64
-			t.Span = s3
-		} else if a == 'u' && b == '3' && c == '2' && isdel(d) {
-			t.Kind = TOKEN_U32
-			t.Span = s3
-		} else if a == 'u' && b == '1' && c == '6' && isdel(d) {
-			t.Kind = TOKEN_U16
-			t.Span = s3
-		} else if a == 'u' && b == '8' && isdel(c) {
-			t.Kind = TOKEN_U8
-			t.Span = s2
 		}
 
 	case '!':
@@ -456,7 +1017,7 @@ func LexWord(code string, charIdx int, lineIdx int) Token {
 	return t
 }
 
-func testLexer(p Parser) {
+func TestLexer(p Parser) {
 	for !p.IsEof() {
 		if p.Code[p.State.CharIdx] == '\n' {
 			p.State.LineIdx++
